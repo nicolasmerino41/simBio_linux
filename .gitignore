@@ -1,0 +1,20 @@
+# Ignore OpenMOLE files and folders
+.openmole/
+openmole/
+
+# Ignore OMData files
+.omr-data/
+
+# Ignore Rasters
+Rasters/
+
+# Ignore objects and large datasets
+Objects/
+DFs/
+
+# Ignore other large or unnecessary folders
+output/
+sim outputs/
+results/
+results1/
+
