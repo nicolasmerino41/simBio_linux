@@ -21,7 +21,7 @@ end
 Base.zero(::Type{MyStructs256{T}}) where {T <: AbstractFloat} = MyStructs256(SVector{num_species, T}(fill(zero(T), num_species)), zero(T))
 Base.zero(x::MyStructs256{T}) where {T <: AbstractFloat} = MyStructs256(SVector{num_species, T}(fill(zero(T), num_species)), zero(T))
 Base.oneunit(::Type{MyStructs256{T}}) where {T <: AbstractFloat} = MyStructsnum_species(fill(oneunit(T), num_species), oneunit(T))
-
+Base.iszero(x::MyStructs256{T}) where {T <: AbstractFloat} = all(iszero, x.a) && iszero(x.b)
 # Comparison based on 'b' field
 Base.isless(x::MyStructs256, y::MyStructs256) = isless(x.b, y.b)
 Base.isless(x::MyStructs256, y::AbstractFloat) = isless(x.b, y)

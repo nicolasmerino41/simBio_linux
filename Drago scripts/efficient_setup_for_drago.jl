@@ -197,7 +197,10 @@ end
 #     end
 # end
 
-DA_sum = deserialize(joinpath(dir, "Objects1_9/DA_sum.jls"))
+DA_sums = deserialize(joinpath(dir, "Objects1_9/DA_sum.jls"))
+# Turnin DA_sum(float) into boolean
+# DA_sum = DA_sums .== 1.0
+
 # @load "Objects1_9/DA_sum.jld2" DA_sum
 DA_sum_r = reverse(DA_sum, dims=1)
 DA_sum_p = permutedims(DA_sum, (2, 1))
@@ -211,7 +214,7 @@ DA_richness = deserialize(joinpath(dir, "Objects1_9/DA_richness.jls"))::DimArray
 # @load "Objects1_9/DA_richness_birmmals.jld2" DA_richness_birmmals
 # @load "Objects1_9/DA_richness_herps.jld2" DA_richness_herps
 ########################## IDX #####################################
-idx = findall(x -> x == 1.0, DA_sum)
+idx = findall(x -> x == 1, DA_sums)
 DA_with_presences = DimArray([fill(0.0, 256) for _ in 1:125, _ in 1:76], (Dim{:a}(1:125), Dim{:b}(1:76)))
 
 for row in axes(DA_with_abundances, 1), col in axes(DA_with_abundances, 2)
