@@ -11,7 +11,7 @@ function size_selection_kernel(predator_mass, prey_mass, sd, beta)
 end
 beta = float(3)
 
-gbif_sizes = CSV.read(joinpath(dir, "DFs\\gbif_sizes.csv"), DataFrame)[:, 2:end]
+gbif_sizes = CSV.read(joinpath(dir, "DFs/gbif_sizes.csv"), DataFrame)[:, 2:end]
 ###################### ZERO DIAGONAL ##################################
 ######################################################################
 function zero_out_diagonal!(matrix)
@@ -31,7 +31,7 @@ function fill_diagonal!(mat, val)
     end
 end
 
-web = CSV.read(joinpath(dir, "DFs\\TetraEU_pairwise_interactions.csv"), DataFrame)
+web = CSV.read(joinpath(dir, "DFs/TetraEU_pairwise_interactions.csv"), DataFrame)
 
 web = DataFrame(predator = web.sourceTaxonName, prey = web.targetTaxonName)
 
@@ -46,13 +46,13 @@ x = vcat(unique_predators, unique_preys)
 unique_species = unique(x)
 
 # Read the CSV file
-diets = CSV.File(joinpath(dir, "DFs\\TetraEU_generic_diet.csv")) |> DataFrame
+diets = CSV.File(joinpath(dir, "DFs/TetraEU_generic_diet.csv")) |> DataFrame
 diets = hcat(diets.sourceTaxonName, diets.targetGenericItemName)
 
-Amph = CSV.read(joinpath(dir, "DFs\\DB_Amphibians_IP.txt"), delim='\t', DataFrame)
-Bird = CSV.read(joinpath(dir, "DFs\\DB_Birds_IP.txt"), delim='\t', DataFrame)
-Mamm = CSV.read(joinpath(dir, "DFs\\DB_Mammals_IP.txt"), delim='\t', DataFrame)
-Rept = CSV.read(joinpath(dir, "DFs\\DB_Reptiles_IP.txt"), delim='\t', DataFrame)
+Amph = CSV.read(joinpath(dir, "DFs/DB_Amphibians_IP.txt"), delim='\t', DataFrame)
+Bird = CSV.read(joinpath(dir, "DFs/DB_Birds_IP.txt"), delim='\t', DataFrame)
+Mamm = CSV.read(joinpath(dir, "DFs/DB_Mammals_IP.txt"), delim='\t', DataFrame)
+Rept = CSV.read(joinpath(dir, "DFs/DB_Reptiles_IP.txt"), delim='\t', DataFrame)
 
 amphibian_names = names(Amph)[2:end]
 reptile_names = names(Rept)[2:end]
@@ -143,7 +143,7 @@ end
 ####################################################################
 ####################################################################
 ####################################################################
-species_df = CSV.File(joinpath(dir, "DFs\\Species_spain_df.csv")) |> DataFrame
+species_df = CSV.File(joinpath(dir, "DFs/Species_spain_df.csv")) |> DataFrame
 
 variables = species_df[!, 2:5]
 rename!(variables, [:ID, :Value, :sum, :UTMCODE])
@@ -154,18 +154,22 @@ species = species[:, spain_names]
 species_df = hcat(variables, species, makeunique=true)
 species_df_matrix = Matrix(species_df)
 
-utmraster = Raster(joinpath(dir, "Rasters\\updated_utmraster.tif"))
+utmraster = Raster(joinpath(dir, "Rasters/updated_utmraster.tif"))
 utmraster_DA = DimArray(utmraster)
 utmraster_da = map(x -> isnothing(x) || isnan(x) ? false : true, utmraster_DA)
 
-DA = deserialize(joinpath(dir, "Objects\\DA.jls"))
-DA_herps = deserialize(joinpath(dir, "Objects\\DA_herps.jls"))
-DA_birmmals = deserialize(joinpath(dir, "Objects\\DA_birmmals.jls"))
+DA = deserialize(joinpath(dir, "Objects1_9/DA.jls"))
+DA_herps = deserialize(joinpath(dir, "Objects1_9/DA_herps.jls"))
+DA_birmmals = deserialize(joinpath(dir, "Objects1_9/DA_birmmals.jls"))
+# @load "Objects1_9/DA.jld2" DA
+# @load "Objects1_9/DA_herps.jld2" DA_herps
+# @load "Objects1_9/DA_birmmals.jld2" DA_birmmals
 
+initial_abundance = 0.41
 DA_with_abundances = deepcopy(DA)
 for row in axes(DA, 1), col in axes(DA, 2)
     if DA[row, col] != MyStructs256(SVector{256, Float64}(fill(0.0, 256)))
-        new_a = SVector{256, Float64}([DA[row, col].a[i] != 0.0 ? 10.0 : DA[row, col].a[i] for i in 1:256])
+        new_a = SVector{256, Float64}([DA[row, col].a[i] != 0.0 ? initial_abundance : DA[row, col].a[i] for i in 1:256])
         DA_with_abundances[row, col] = MyStructs256(new_a)
     end
 end
@@ -193,7 +197,8 @@ end
 #     end
 # end
 
-DA_sum = deserialize(joinpath(dir, "Objects\\DA_sum.jls"))
+DA_sum = deserialize(joinpath(dir, "Objects1_9/DA_sum.jls"))
+# @load "Objects1_9/DA_sum.jld2" DA_sum
 DA_sum_r = reverse(DA_sum, dims=1)
 DA_sum_p = permutedims(DA_sum, (2, 1))
 
@@ -201,8 +206,10 @@ DA_with_abundances_r = reverse(DA_with_abundances, dims=1)
 DA_with_abundances_p = permutedims(DA_with_abundances, (2, 1))
 DA_with_abundances_p_masked = deepcopy(DA_with_abundances_p)
 
-DA_richness = deserialize(joinpath(dir, "Objects\\DA_richness.jls"))::DimArray{Float64,2}
-
+DA_richness = deserialize(joinpath(dir, "Objects1_9/DA_richness.jls"))::DimArray{Float64,2}
+# @load "Objects1_9/DA_richness.jld2" DA_richness
+# @load "Objects1_9/DA_richness_birmmals.jld2" DA_richness_birmmals
+# @load "Objects1_9/DA_richness_herps.jld2" DA_richness_herps
 ########################## IDX #####################################
 idx = findall(x -> x == 1.0, DA_sum)
 DA_with_presences = DimArray([fill(0.0, 256) for _ in 1:125, _ in 1:76], (Dim{:a}(1:125), Dim{:b}(1:76)))
@@ -216,7 +223,7 @@ for row in axes(DA_with_abundances, 1), col in axes(DA_with_abundances, 2)
 end
 
 ######################### NPP ####################################
-npp_absolute = CSV.File(joinpath(dir, "DFs\\npp_absolute_df.csv")) |> DataFrame
+npp_absolute = CSV.File(joinpath(dir, "DFs/npp_absolute_df.csv")) |> DataFrame
 rename!(npp_absolute, [:ID, :UTMCODE, :npp, :X, :Y]) 
 npp_absolute_in_kg = deepcopy(npp_absolute)
 npp_absolute_in_kg.npp = npp_absolute.npp .* 1000
@@ -225,14 +232,16 @@ npp_absolute_in_kg = npp_absolute_in_kg[:, [2, 3]]
 species_df = leftjoin(species_df, npp_absolute_in_kg, on = :UTMCODE, makeunique = true)
 species_df_matrix = Matrix(species_df)
 
-npp_DA = deserialize(joinpath(dir, "Objects\\npp_DA.jls"))
+npp_DA = deserialize(joinpath(dir, "Objects1_9/npp_DA.jls"))
+# @load "Objects1_9/npp_DA.jld2" npp_DA
 # npp_DA = npp_DA./10000
 ################### EFFICIENT MATRIX FRAMEWORK #####################
 ####################################################################
 ####################################################################
 ####################################################################
 # Load a DataFrame from a serialized file ('.jls' format).
-iberian_interact_df = deserialize(joinpath(dir, "Objects\\iberian_interact_df.jls"))
+# iberian_interact_df = deserialize(joinpath(dir, "Objects/iberian_interact_df.jls"))
+iberian_interact_df = CSV.File("Objects1_9/iberian_interact_df.csv") |> DataFrame
 # Convert the DataFrame to a matrix for easier manipulation.
 iberian_interact_matrix = iberian_interact_df |> Matrix
 # Convert the modified matrix back to a DataFrame, preserving the original column names.
@@ -248,9 +257,9 @@ iberian_interact_NA = iberian_interact_NA[spain_names, spain_names]
 
 ##################### NEW NICHES ###########################
 ######## bio rasters  ##############
-bio5_DA = deserialize(joinpath(dir, "Objects\\bio5.jls"))
-bio6_DA = deserialize(joinpath(dir, "Objects\\bio6.jls"))
-bio12_DA = deserialize(joinpath(dir, "Objects\\bio12.jls"))
+bio5_DA = deserialize(joinpath(dir, "Objects1_9/bio5.jls"))
+bio6_DA = deserialize(joinpath(dir, "Objects1_9/bio6.jls"))
+bio12_DA = deserialize(joinpath(dir, "Objects1_9/bio12.jls"))
 futurebio5_DA = bio5_DA .+ 1.0
 futurebio6_DA = bio6_DA .+ 1.0
 futurebio12_DA = bio12_DA .+ rand(Normal(0, 100), 125, 76)
@@ -270,19 +279,19 @@ body_mass_vector_herps = body_mass_vector[1:49]
 body_mass_vector_birds = body_mass_vector[50:256]
 
 ######## niches_df  ##############
-species_niches = CSV.File(joinpath(dir, "DFs\\iberian_species_niches_withbinned_TH.csv"), decimal = ',') |> DataFrame
+species_niches = CSV.File(joinpath(dir, "DFs/iberian_species_niches_withbinned_TH.csv"), decimal = ',') |> DataFrame
 order_indices = indexin(spain_names, species_niches[:, :Species])
 species_niches = species_niches[order_indices, :]
 
-lax_species_niches = CSV.File(joinpath(dir, "DFs\\iberian_species_niches_withLaxNiche.csv"), decimal = ',') |> DataFrame
+lax_species_niches = CSV.File(joinpath(dir, "DFs/iberian_species_niches_withLaxNiche.csv"), decimal = ',') |> DataFrame
 order_indices = indexin(spain_names, lax_species_niches[:, :Species])
 lax_species_niches = lax_species_niches[order_indices, :]
 
-strict_species_niches = CSV.File(joinpath(dir, "DFs\\iberian_species_niches_withVeryStrictNiche.csv"), decimal = ',') |> DataFrame
+strict_species_niches = CSV.File(joinpath(dir, "DFs/iberian_species_niches_withVeryStrictNiche.csv"), decimal = ',') |> DataFrame
 order_indices = indexin(spain_names, strict_species_niches[:, :Species])
 strict_species_niches = strict_species_niches[order_indices, :]
 
-herbivore_names = CSV.File(joinpath(dir, "DFs\\herbivore_names.csv")) |> DataFrame
+herbivore_names = CSV.File(joinpath(dir, "DFs/herbivore_names.csv")) |> DataFrame
 herbivore_names = convert(Vector{String}, herbivore_names[:, 2])
 binary_vector = [name in herbivore_names ? 1 : 0 for name in names(iberian_interact_df)]
 opposite_binary_vector = [name in herbivore_names ? 0 : 1 for name in names(iberian_interact_df)]

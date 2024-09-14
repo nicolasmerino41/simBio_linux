@@ -37,7 +37,7 @@ function average_shannon_index(array_output, position; modified = false, caca = 
 end
 ############### Mean Trophic Level #################
 ####################################################
-TrophInd = CSV.File(joinpath(dir, "DFs\\TLs.csv")) |> DataFrame
+TrophInd = CSV.File(joinpath(dir, "DFs/TLs.csv")) |> DataFrame
 TrophInd = TrophInd[1:256, 1:2]
 TrophInd[findall(x -> x < 1.05, TrophInd[:, 2]), 2] .= 1.0
 # TrophInd[:, 2] = TrophInd[:, 2].-1
@@ -153,7 +153,7 @@ function richness_similarity(array_output, position; modified = false, caca = fa
 end
 
 # # Iterate over the grid and create new SVector replacing 10.0 with 500.0
-# triall = deserialize("Objects\\DA_with_abundances_all10.jls")::DimArray{MyStructs256{Float64},2}
+# triall = deserialize("Objects/DA_with_abundances_all10.jls")::DimArray{MyStructs256{Float64},2}
 # for row in axes(triall, 1), col in axes(triall, 2)
 #     old_vector = triall[row, col].a
 #     new_vector = SVector{256, Float64}(replace(old_vector, 10.0 => 500.0))  # Create a new SVector

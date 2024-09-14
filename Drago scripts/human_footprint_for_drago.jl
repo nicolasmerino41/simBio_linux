@@ -1,4 +1,4 @@
-hf = Rasters.Raster(joinpath(dir, "Rasters\\wildareas-v3-2009-human-footprint.tif"))
+hf = Rasters.Raster(joinpath(dir, "Rasters/wildareas-v3-2009-human-footprint.tif"))
 
 hf_float = Rasters.map(x -> Float32(x), hf)
 

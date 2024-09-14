@@ -7,7 +7,7 @@ Pkg.add(
         "CSV", "DataFrames", "ArchGDAL", 
         "Distributions", "NamedArrays", "StaticArrays",
         "Serialization", "Rasters", "DimensionalData",
-        "OrderedCollections", "StatsBase"
+        "OrderedCollections", "StatsBase", "JLD2"
     ]
 )
 Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))
@@ -19,7 +19,7 @@ using CSV, DataFrames
 using Distributions, NamedArrays, StaticArrays
 using DynamicGrids, Dispersal
 using DimensionalData, Rasters, Serialization, ArchGDAL
-using OrderedCollections, StatsBase
+using OrderedCollections, StatsBase, JLD2
 
 # Setup code
 include(joinpath(dir, "Scripts/HerpsVsBirmmals.jl"))
@@ -28,7 +28,7 @@ include(joinpath(dir, "Scripts/efficient_setup_for_drago.jl"))
 include(joinpath(dir, "Scripts/human_footprint_for_drago.jl"))
 include(joinpath(dir, "Scripts/New_metrics_for_drago.jl"))
 
-DA_with_abundances = deepcopy(DA_birmmals_with_abundances) + deepcopy(DA_herps_with_abundances)
+# DA_with_abundances = deepcopy(DA_birmmals_with_abundances) + deepcopy(DA_herps_with_abundances)
 pepe_state = (
     state = Matrix(DA_with_abundances),
     k_DA = Matrix(k_DA_hf_additive),
@@ -40,32 +40,20 @@ caca = deepcopy(iberian_interact_NA)
 self_regulation = 1.0
 # sigma = 10.0
 # epsilon = 1.0
-full_IM = Matrix(turn_adj_into_inter(caca, sigma, epsilon, self_regulation))
+# full_IM = Matrix(turn_adj_into_inter(caca, sigma, epsilon, self_regulation))
 
 # alfa = 0.1
 
-function GLV(state::MyStructs256, k_DA::MyStructs256)
-    return MyStructs256(
-        SVector{256, Float64}(
-            state.a + (state.a .* (k_DA.a - state.a) + ((full_IM * state.a) .* state.a)) 
-        )
-    )
+initial_abundance = 0.41
+DA_with_abundances = deepcopy(DA)
+for row in axes(DA, 1), col in axes(DA, 2)
+    if DA[row, col] != MyStructs256(SVector{256, Float64}(fill(0.0, 256)))
+        new_a = SVector{256, Float64}([DA[row, col].a[i] != 0.0 ? initial_abundance : DA[row, col].a[i] for i in 1:256])
+        DA_with_abundances[row, col] = MyStructs256(new_a)
+    end
 end
-
-biotic_GLV = Cell{Tuple{:state, :k_DA}, :state}() do data, (state, k_DA), I
-    # if any(isinf, state.a) || any(isnan, state.a)
-    #     @error "state has NA values"
-    #     println(I)
-    # end
-    return MyStructs256(SVector{256, Float64}(max.(0.0, GLV(state, k_DA).a)))
-end
-
-outdisp = OutwardsDispersal{:state, :state}(;
-    formulation=CustomKernel(alfa),
-    distancemethod=AreaToArea(30),
-    maskbehavior = Dispersal.CheckMaskEdges()
-);
-
+const DA_with_abundances = deepcopy(DA)
+const iberian_interact_NA = deepcopy(iberian_interact_NA_original)
 # Function to save parameters, grid type (k_DA name), and metrics to CSV and append plots to the final PDFs
 function run_simulation(sigma, epsilon, alfa)
 
@@ -75,7 +63,7 @@ function run_simulation(sigma, epsilon, alfa)
     # Get the corresponding k_DA grid from the list
     k_DA = k_DA_hf_multiplicative
 
-    DA_with_abundances = deepcopy(DA_birmmals_with_abundances) + deepcopy(DA_herps_with_abundances)
+    DA_with_abundances = deepcopy(DA_with_abundances)
     pepe_state = (
         state = Matrix(DA_with_abundances),
         k_DA = Matrix(k_DA_hf_additive),
@@ -154,7 +142,7 @@ function run_simulation(sigma, epsilon, alfa)
     )
 
     # Append or create the CSV file
-    csv_filename = "resultados\\DirectSamplingResults.csv"
+    csv_filename = "resultados/DirectSamplingResults.csv"
     if isfile(csv_filename)
         CSV.write(csv_filename, results_row, append = true)
     else
@@ -163,9 +151,9 @@ function run_simulation(sigma, epsilon, alfa)
 end
 
 # Simulation parameters
-# sigmas = [0.001, 0.005, 0.008, 0.01, 0.05, 0.07, 0.09, 0.1, 0.2, 0.3, 0.5]
-# epsilons = [0.1, 0.5, 1.0, 2.0, 3.0]
-# alfa_values = [0.01, 0.05, 0.1, 0.3, 0.6, 0.9]
+# sigmas = [0.0001, 0.001, 0.005, 0.008, 0.01, 0.05, 0.07, 0.09, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5., 2.0, 3.0, 5.0, 7.0, 9.0, 10.0]
+# epsilons = [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0]
+# alfa_values = [0.001, 0.01, 0.05, 0.1, 0.3, 0.6, 0.9, 1.1]
 k_DA_list = [k_DA.DA_multiplicative, k_DA.DA_additive, k_DA.DA_min, k_DA.DA_harmonic, k_DA.DA_geometric]
 k_DA_names = ["multiplicative", "additive", "min", "harmonic", "geometric"]
 positions = [1, 2, 3, 4, 5]
