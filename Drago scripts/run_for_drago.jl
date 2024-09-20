@@ -1,17 +1,6 @@
 num_species = 256
 using Pkg
-Pkg.activate(pwd())
 cd(pwd())
-Pkg.add(
-    [
-        "CSV", "DataFrames", "ArchGDAL", 
-        "Distributions", "NamedArrays", "StaticArrays",
-        "Serialization", "Rasters", "DimensionalData",
-        "OrderedCollections", "StatsBase", "JLD2"
-    ]
-)
-Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))
-Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/Dispersal.jl", rev="dev"))
 
 dir = pwd()
 # Packages
@@ -36,8 +25,8 @@ pepe_state = (
     state_richness = Matrix(DA_richness)
 )
 
-# caca = deepcopy(iberian_interact_NA)
-# self_regulation = 1.0
+caca = deepcopy(iberian_interact_NA)
+self_regulation = 1.0
 # sigma = 10.0
 # epsilon = 1.0
 # full_IM = Matrix(turn_adj_into_inter(caca, sigma, epsilon, self_regulation))
@@ -71,7 +60,7 @@ function run_simulation(sigma, epsilon, alfa)
         npp_DA = Matrix(npp_DA),
         state_richness = Matrix(DA_richness)
     )
-    println("Breakpoint 1")
+
     caca = deepcopy(iberian_interact_NA_const)
     self_regulation = 1.0
     s = sigma
@@ -79,7 +68,7 @@ function run_simulation(sigma, epsilon, alfa)
     full_IM = Matrix(turn_adj_into_inter(caca, s, e, self_regulation))
 
     a = alfa
-    println("Breakpoint 2")
+
     function GLV(state::MyStructs256, k_DA::MyStructs256)
         return MyStructs256(
             SVector{256, Float64}(
@@ -87,7 +76,7 @@ function run_simulation(sigma, epsilon, alfa)
             )
         )
     end
-    println("Breakpoint 3")
+
     biotic_GLV = Cell{Tuple{:state, :k_DA}, :state}() do data, (state, k_DA), I
         # if any(isinf, state.a) || any(isnan, state.a)
         #     @error "state has NA values"
@@ -95,7 +84,7 @@ function run_simulation(sigma, epsilon, alfa)
         # end
         return MyStructs256(SVector{256, Float64}(max.(0.0, GLV(state, k_DA).a)))
     end
-    println("Breakpoint 4")
+
     outdisp = OutwardsDispersal{:state, :state}(;
         formulation=CustomKernel(a),
         distancemethod=AreaToArea(30),
@@ -103,33 +92,31 @@ function run_simulation(sigma, epsilon, alfa)
     );
 
     println("sigma  = ", sigma, " epsilon = ", epsilon, " alfa = ", alfa)
-    println("Breakpoint 5")
+
     # Run the simulation
     array_output = ResultOutput(
         pepe_state; tspan = 1:10,
         mask = Matrix(DA_sum)
     )
-    println("Breakpoint 6", "DA_sum is ", typeof(Matrix(DA_sum)))
     # println("output done")
     p = sim!(array_output, Ruleset(biotic_GLV, outdisp; boundary = Reflect()))
-    println("Breakpoint 7")
     # println("simulation done")
     # Step 1: Compute metrics from the last timestep of the simulation (p[end])
     avg_shannon = average_shannon_index(p, 1; modified = true)
-    println("shannon done")
+    # println("shannon done")
     avg_bbp = average_bbp(p, position; modified = true)
-    println("bbp done")
+    # println("bbp done")
     richness_sim = richness_similarity(p, position; modified = true)
-    println("richness done")
+    # println("richness done")
     alive_preds = alive_predators(p, position; modified = true)
-    println("predators done")
+    # println("predators done")
     mean_tl = calculate_mean_tl(p, position; modified = true)
-    println("meantl done")
+    # println("meantl done")
     
     final_state = p[end].state
     NaNs = any(i -> any(isnan, final_state[idx[i][1], idx[i][2]].a), 1:length(idx)) ? 1.0 : 0.0
 
-    println("NaNs")
+    # println(NaNs)
     # Step 2: Save the parameters, grid type, and metrics in a CSV
     results_row = DataFrame(
         sigma = sigma,
@@ -143,7 +130,7 @@ function run_simulation(sigma, epsilon, alfa)
         mean_tl = round(mean_tl, digits = 2),
         NaNs = NaNs
     )
-    println("Breakpoint 8")
+    serialize("resultados/outputs/s$sigma-e$epsilon-a$alfa.jls", p[end].state)
     # Append or create the CSV file
     csv_filename = "resultados/DirectSamplingResults.csv"
     if isfile(csv_filename)

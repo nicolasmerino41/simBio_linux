@@ -30,6 +30,22 @@ function fill_diagonal!(mat, val)
         mat[i, i] = val
     end
 end
+#################### get_neighbors ###################################
+######################################################################
+# Helper function to get the neighbors
+function get_neighbors(matrix, row, col)
+    neighbors = []
+    rows, cols = size(matrix)
+    
+    for r in max(row-1, 1):min(row+1, rows)
+        for c in max(col-1, 1):min(col+1, cols)
+            if (r != row || c != col) && !isnan(matrix[r, c])
+                push!(neighbors, matrix[r, c])
+            end
+        end
+    end
+    return neighbors
+end
 
 web = CSV.read(joinpath(dir, "DFs/TetraEU_pairwise_interactions.csv"), DataFrame)
 
@@ -158,9 +174,9 @@ utmraster = Raster(joinpath(dir, "Rasters/updated_utmraster.tif"))
 utmraster_DA = DimArray(utmraster)
 utmraster_da = map(x -> isnothing(x) || isnan(x) ? false : true, utmraster_DA)
 
-DA = deserialize(joinpath(dir, "Objects1_9/DA.jls"))
-DA_herps = deserialize(joinpath(dir, "Objects1_9/DA_herps.jls"))
-DA_birmmals = deserialize(joinpath(dir, "Objects1_9/DA_birmmals.jls"))
+DA = deserialize(joinpath(dir, "Objects/DA.jls"))
+DA_herps = deserialize(joinpath(dir, "Objects/DA_herps.jls"))
+DA_birmmals = deserialize(joinpath(dir, "Objects/DA_birmmals.jls"))
 # @load "Objects1_9/DA.jld2" DA
 # @load "Objects1_9/DA_herps.jld2" DA_herps
 # @load "Objects1_9/DA_birmmals.jld2" DA_birmmals
@@ -197,7 +213,7 @@ end
 #     end
 # end
 
-DA_sums = deserialize(joinpath(dir, "Objects1_9/DA_sum.jls"))
+DA_sum = deserialize(joinpath(dir, "Objects/DA_sum.jls"))
 # Turnin DA_sum(float) into boolean
 # DA_sum = DA_sums .== 1.0
 
@@ -209,12 +225,12 @@ DA_with_abundances_r = reverse(DA_with_abundances, dims=1)
 DA_with_abundances_p = permutedims(DA_with_abundances, (2, 1))
 DA_with_abundances_p_masked = deepcopy(DA_with_abundances_p)
 
-DA_richness = deserialize(joinpath(dir, "Objects1_9/DA_richness.jls"))::DimArray{Float64,2}
+DA_richness = deserialize(joinpath(dir, "Objects/DA_richness.jls"))::DimArray{Float64,2}
 # @load "Objects1_9/DA_richness.jld2" DA_richness
 # @load "Objects1_9/DA_richness_birmmals.jld2" DA_richness_birmmals
 # @load "Objects1_9/DA_richness_herps.jld2" DA_richness_herps
 ########################## IDX #####################################
-idx = findall(x -> x == 1, DA_sums)
+idx = findall(x -> x == 1, DA_sum)
 DA_with_presences = DimArray([fill(0.0, 256) for _ in 1:125, _ in 1:76], (Dim{:a}(1:125), Dim{:b}(1:76)))
 
 for row in axes(DA_with_abundances, 1), col in axes(DA_with_abundances, 2)
@@ -235,7 +251,7 @@ npp_absolute_in_kg = npp_absolute_in_kg[:, [2, 3]]
 species_df = leftjoin(species_df, npp_absolute_in_kg, on = :UTMCODE, makeunique = true)
 species_df_matrix = Matrix(species_df)
 
-npp_DA = deserialize(joinpath(dir, "Objects1_9/npp_DA.jls"))
+npp_DA = deserialize(joinpath(dir, "Objects/npp_DA.jls"))
 # @load "Objects1_9/npp_DA.jld2" npp_DA
 # npp_DA = npp_DA./10000
 ################### EFFICIENT MATRIX FRAMEWORK #####################
@@ -244,7 +260,7 @@ npp_DA = deserialize(joinpath(dir, "Objects1_9/npp_DA.jls"))
 ####################################################################
 # Load a DataFrame from a serialized file ('.jls' format).
 # iberian_interact_df = deserialize(joinpath(dir, "Objects/iberian_interact_df.jls"))
-iberian_interact_df = CSV.File("Objects1_9/iberian_interact_df.csv") |> DataFrame
+iberian_interact_df = CSV.File("Objects/iberian_interact_df.csv") |> DataFrame
 # Convert the DataFrame to a matrix for easier manipulation.
 iberian_interact_matrix = iberian_interact_df |> Matrix
 # Convert the modified matrix back to a DataFrame, preserving the original column names.
@@ -260,9 +276,9 @@ iberian_interact_NA = iberian_interact_NA[spain_names, spain_names]
 
 ##################### NEW NICHES ###########################
 ######## bio rasters  ##############
-bio5_DA = deserialize(joinpath(dir, "Objects1_9/bio5.jls"))
-bio6_DA = deserialize(joinpath(dir, "Objects1_9/bio6.jls"))
-bio12_DA = deserialize(joinpath(dir, "Objects1_9/bio12.jls"))
+bio5_DA = deserialize(joinpath(dir, "Objects/bio5.jls"))
+bio6_DA = deserialize(joinpath(dir, "Objects/bio6.jls"))
+bio12_DA = deserialize(joinpath(dir, "Objects/bio12.jls"))
 futurebio5_DA = bio5_DA .+ 1.0
 futurebio6_DA = bio6_DA .+ 1.0
 futurebio12_DA = bio12_DA .+ rand(Normal(0, 100), 125, 76)
