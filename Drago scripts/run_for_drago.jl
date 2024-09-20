@@ -141,22 +141,21 @@ function run_simulation(sigma, epsilon, alfa)
 end
 
 # Simulation parameters
-# sigmas = [0.0001, 0.001, 0.005, 0.008, 0.01, 0.05, 0.07, 0.09, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5., 2.0, 3.0, 5.0, 7.0, 9.0, 10.0]
-# epsilons = [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0]
-# alfa_values = [0.001, 0.01, 0.05, 0.1, 0.3, 0.6, 0.9, 1.1]
+sigmas = [0.0001, 0.001, 0.005, 0.008, 0.01, 0.05, 0.07, 0.09, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5, 2.0, 3.0, 5.0, 7.0, 9.0, 10.0]
+epsilons = [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0]
+alfa_values = [0.001, 0.01, 0.05, 0.1, 0.3, 0.6, 0.9, 1.1]
 k_DA_list = [k_DA.DA_multiplicative, k_DA.DA_additive, k_DA.DA_min, k_DA.DA_harmonic, k_DA.DA_geometric]
 k_DA_names = ["multiplicative", "additive", "min", "harmonic", "geometric"]
 positions = [1, 2, 3, 4, 5]
-sigmas = [0.001, 0.005]
-epsilons = [0.1, 0.5]
-alfa_values = [0.01, 0.05]
+# sigmas = [0.001, 0.005]
+# epsilons = [0.1, 0.5]
+# alfa_values = [0.01, 0.05]
 
 # Use Threads.@threads to parallelize the loop
 Threads.@threads for sigma in sigmas
-    for epsilon in epsilons
+    Threads.@threads for epsilon in epsilons
         for alfa in alfa_values  
                 run_simulation(sigma, epsilon, alfa)
         end
     end
 end
-
