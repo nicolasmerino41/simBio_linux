@@ -112,6 +112,7 @@ function run_simulation(sigma, epsilon, alfa)
     # println("predators done")
     mean_tl = calculate_mean_tl(p, position; modified = true)
     # println("meantl done")
+    mean_sp = mean_n_of_species(p, position; modified = true)
     
     final_state = p[end].state
     NaNs = any(i -> any(isnan, final_state[idx[i][1], idx[i][2]].a), 1:length(idx)) ? 1.0 : 0.0
@@ -128,6 +129,7 @@ function run_simulation(sigma, epsilon, alfa)
         richness_similarity = round(richness_sim, digits = 2),
         alive_predators = round(alive_preds, digits = 2),
         mean_tl = round(mean_tl, digits = 2),
+	    mean_n_of_species = round(mean_sp, digits = 2),
         NaNs = NaNs
     )
     serialize("resultados/outputs/s$sigma-e$epsilon-a$alfa.jls", p[end].state)

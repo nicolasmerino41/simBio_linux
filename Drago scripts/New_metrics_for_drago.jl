@@ -203,3 +203,26 @@ function total_biomass(array_output, position; modified = false, caca = false)
         combined_abundances = array_output.*lambda_DA[position]
     end
 end
+######### MEAN_N_OF_SPECIES ################
+function mean_n_of_species(array_output, position; modified = false, caca = false)
+    if !modified && !caca
+        # Merge birmmals and herps
+        combined_abundances = (deepcopy(array_output[end].herps) + deepcopy(array_output[end].birmmals)).*lambda_DA[position]
+    elseif modified && !caca
+        combined_abundances = array_output[end].state.*lambda_DA[position]
+    end
+    if caca
+        combined_abundances = array_output.*lambda_DA[position]
+    end
+    vector = Float64[]
+    # Calculate presence/absence and simulated richness
+    for cell in idx
+        if !any(isnan, combined_abundances[cell].a)
+            abundances = combined_abundances[cell].a
+            presence = abundances .> body_mass_vector
+            simulated_richness = sum(presence)
+            vector = push!(vector, simulated_richness)
+        end
+    end
+    return mean(vector)
+end
