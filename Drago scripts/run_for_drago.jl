@@ -151,11 +151,11 @@ positions = [1, 2, 3, 4, 5]
 # epsilons = [0.1, 0.5]
 # alfa_values = [0.01, 0.05]
 
-# Use Threads.@threads to parallelize the loop
-Threads.@threads for sigma in sigmas
-    Threads.@threads for epsilon in epsilons
-        for alfa in alfa_values  
-                run_simulation(sigma, epsilon, alfa)
-        end
-    end
+# Create a vector of tuples for all combinations of parameters
+params = [(sigma, epsilon, alfa) for sigma in sigmas for epsilon in epsilons for alfa in alfa_values]
+
+# Use `Threads.@threads` over the parameter space
+Threads.@threads for i in 1:length(params)
+    sigma, epsilon, alfa = params[i]
+    run_simulation(sigma, epsilon, alfa)
 end
