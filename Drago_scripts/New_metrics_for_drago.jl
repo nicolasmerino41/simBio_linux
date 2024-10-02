@@ -226,3 +226,5 @@ function mean_n_of_species(array_output, position; modified = false, caca = fals
     end
     return mean(vector)
 end
+
+############### STABILITY METRICS ################

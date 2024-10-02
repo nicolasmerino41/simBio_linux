@@ -41,7 +41,7 @@ val exploration =
     seed = seed,
     sample = 100,
     aggregation = Seq(pi evaluate average)
-  ) hook display on env
+  ) hook (workDirectory / "pi_trial") on env
 
 exploration 
 
