@@ -16,6 +16,7 @@ include(joinpath(dir, "Scripts/kernels_for_drago.jl"))
 include(joinpath(dir, "Scripts/efficient_setup_for_drago.jl"))
 include(joinpath(dir, "Scripts/human_footprint_for_drago.jl"))
 include(joinpath(dir, "Scripts/New_metrics_for_drago.jl"))
+include(joinpath(dir, "Scripts/Implicit_competition_for_herbivores.jl"))
 
 # DA_with_abundances = deepcopy(DA_birmmals_with_abundances) + deepcopy(DA_herps_with_abundances)
 pepe_state = (
@@ -24,14 +25,6 @@ pepe_state = (
     npp_DA = Matrix(npp_DA),
     state_richness = Matrix(DA_richness)
 )
-
-caca = deepcopy(iberian_interact_NA)
-self_regulation = 1.0
-# sigma = 10.0
-# epsilon = 1.0
-# full_IM = Matrix(turn_adj_into_inter(caca, sigma, epsilon, self_regulation))
-
-# alfa = 0.1
 
 initial_abundance = 0.41
 DA_with_abundances = deepcopy(DA)
@@ -45,7 +38,7 @@ end
 const DA_with_abundances_const = deepcopy(DA_with_abundances)
 const iberian_interact_NA_const = deepcopy(iberian_interact_NA)
 # Function to save parameters, grid type (k_DA name), and metrics to CSV and append plots to the final PDFs
-function run_simulation(sigma, epsilon, alfa)
+function run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
 
     k_DA_name = "k_DA_hf_multiplicative"
     position = 1
@@ -61,18 +54,32 @@ function run_simulation(sigma, epsilon, alfa)
         state_richness = Matrix(DA_richness)
     )
 
-    caca = deepcopy(iberian_interact_NA_const)
+    ##### Matrices #####
     self_regulation = 1.0
     s = sigma
     e = epsilon
-    full_IM = Matrix(turn_adj_into_inter(caca, s, e, self_regulation))
+    beta = 3.0
+    # Trophic
+    caca = deepcopy(iberian_interact_NA_const)
+    full_IM = Matrix(turn_adj_into_inter(caca, s, e, self_regulation, beta))
+    # Competition
+    s_comp = sigma_comp
+    ass = assymetry
+    competition_NA = deepcopy(iberian_interact_NA)
+    competition_NA .= 0.0
+    for i in names(competition_NA, 1), j in names(competition_NA, 2)
+        if i in herbivore_names && j in herbivore_names
+            competition_NA[i, j] = 1.0
+        end 
+    end
+    full_comp = turn_comp_into_inter(competition_NA, s_comp, ass)
 
     a = alfa
 
     function GLV(state::MyStructs256, k_DA::MyStructs256)
         return MyStructs256(
             SVector{256, Float64}(
-                state.a + (state.a .* (k_DA.a - state.a) + ((full_IM * state.a) .* state.a)) 
+                state.a + (state.a .* (k_DA.a - state.a) + ((full_IM * state.a) .* state.a) + ((full_comp * state.a) .* state.a)) 
             )
         )
     end
@@ -91,11 +98,11 @@ function run_simulation(sigma, epsilon, alfa)
         maskbehavior = Dispersal.CheckMaskEdges()
     );
 
-    println("sigma  = ", sigma, " epsilon = ", epsilon, " alfa = ", alfa)
+    println("sigma  = ", sigma, " epsilon = ", epsilon, " alfa = ", alfa, " sigma_comp = ", sigma_comp, " assymetry = ", assymetry)
 
     # Run the simulation
     array_output = ResultOutput(
-        pepe_state; tspan = 1:10,
+        pepe_state; tspan = 1:500,
         mask = Matrix(DA_sum)
     )
     # println("output done")
@@ -130,9 +137,10 @@ function run_simulation(sigma, epsilon, alfa)
         alive_predators = round(alive_preds, digits = 2),
         mean_tl = round(mean_tl, digits = 2),
 	    mean_n_of_species = round(mean_sp, digits = 2),
+        Threads = Threads.nthreads(),
         NaNs = NaNs
     )
-    serialize("resultados/outputs/s$sigma-e$epsilon-a$alfa.jls", p[end].state)
+    serialize("resultados/outputs/$sigma-$epsilon-$alfa-$sigma_comp-$assymetry.jls", p[end].state)
     # Append or create the CSV file
     csv_filename = "resultados/DirectSamplingResults.csv"
     if isfile(csv_filename)
@@ -143,21 +151,25 @@ function run_simulation(sigma, epsilon, alfa)
 end
 
 # Simulation parameters
-sigmas = [0.0001, 0.001, 0.005, 0.008, 0.01, 0.05, 0.07, 0.09, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5, 2.0, 3.0, 5.0, 7.0, 9.0, 10.0]
+sigmas = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.07, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5, 2.0, 3.0]
 epsilons = [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0]
 alfa_values = [0.001, 0.01, 0.05, 0.1, 0.3, 0.6, 0.9, 1.1]
-k_DA_list = [k_DA.DA_multiplicative, k_DA.DA_additive, k_DA.DA_min, k_DA.DA_harmonic, k_DA.DA_geometric]
-k_DA_names = ["multiplicative", "additive", "min", "harmonic", "geometric"]
-positions = [1, 2, 3, 4, 5]
+sigma_comp_values = [0.001, 0.1, 0.5, 1.0, 1.5, 2.0]
+assymetry_values = [0.0, 0.33, 0.66, 1.0]
+# k_DA_list = [k_DA.DA_multiplicative, k_DA.DA_additive, k_DA.DA_min, k_DA.DA_harmonic, k_DA.DA_geometric]
+# k_DA_names = ["multiplicative", "additive", "min", "harmonic", "geometric"]
+# positions = [1, 2, 3, 4, 5]
 # sigmas = [0.001, 0.005]
 # epsilons = [0.1, 0.5]
 # alfa_values = [0.01, 0.05]
+# sigma_comp_values = [0.001, 0.005]
+# assymetry_values = [0.001, 0.005]
 
 # Create a vector of tuples for all combinations of parameters
-params = [(sigma, epsilon, alfa) for sigma in sigmas for epsilon in epsilons for alfa in alfa_values]
+params = [(sigma, epsilon, alfa, sigma_comp, assymetry) for sigma in sigmas for epsilon in epsilons for alfa in alfa_values for sigma_comp in sigma_comp_values for assymetry in assymetry_values]
 
 # Use `Threads.@threads` over the parameter space
 Threads.@threads for i in 1:length(params)
-    sigma, epsilon, alfa = params[i]
-    run_simulation(sigma, epsilon, alfa)
+    sigma, epsilon, alfa, sigma_comp, assymetry = params[i]
+    run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
 end

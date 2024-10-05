@@ -114,7 +114,7 @@ interaction_count = sum(iberian_interact_matrix .== 1)
 # Convert the iberian_interact_matrix into a DataFrame with appropriate column and row names
 self_regulation = 0.001
 iberian_interact_df = DataFrame(iberian_interact_matrix, species_names)
-function turn_adj_into_inter(adjacencyy, sigma, epsilon, self_regulation)
+function turn_adj_into_inter(adjacencyy, sigma, epsilon, self_regulation, beta)
     adjacency = deepcopy(adjacencyy)
     epsilon = float(epsilon)
     u = adjacency
