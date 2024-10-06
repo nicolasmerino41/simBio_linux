@@ -131,6 +131,8 @@ function run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
         epsilon = epsilon,
         alfa = alfa,
         k_DA_name = k_DA_name,
+        sigma_comp = sigma_comp,
+        assymetry = assymetry,
         avg_shannon = round(avg_shannon, digits = 2),
         avg_bbp = round(avg_bbp, digits = 2),
         richness_similarity = round(richness_sim, digits = 2),
