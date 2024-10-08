@@ -37,17 +37,6 @@ function average_shannon_index(array_output, position; modified = false, caca = 
 end
 ############### Mean Trophic Level #################
 ####################################################
-TrophInd = CSV.File(joinpath(dir, "DFs/TLs.csv")) |> DataFrame
-TrophInd = TrophInd[1:256, 1:2]
-TrophInd[findall(x -> x < 1.05, TrophInd[:, 2]), 2] .= 1.0
-# TrophInd[:, 2] = TrophInd[:, 2].-1
-# TrophInd[256, 2] = 1.0 # For some reason last line had floating point error
-rename!(TrophInd, Symbol("Column1") => :Species, Symbol("TL") => :TL)
-TrophInd[findall(x -> 1.98 < x < 2.05, TrophInd[:, 2]), 2] .= 2.0
-order_indices = indexin(spain_names, TrophInd[:, :Species])
-TrophInd = TrophInd[order_indices, :]
-TrophInd_vector = TrophInd[:, :TL]
-
 # Function to calculate mean trophic level
 function calculate_mean_tl(array_output, position; modified = false, caca = false)
     if !modified && !caca

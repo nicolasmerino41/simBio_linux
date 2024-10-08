@@ -110,6 +110,20 @@ iberian_interact_matrix = float(iberian_interact_matrix)
 interaction_count = sum(iberian_interact_matrix .== 1)
 # println("The number of 1s in the iberian_interact_matrix is $interaction_count")
 
+#### STABLISHING TROPHIC LEVELS AND HERBIVORE NAMES
+TrophInd = CSV.File(joinpath(dir, "DFs/TLs.csv")) |> DataFrame
+TrophInd = TrophInd[1:256, 2:3]
+TrophInd[:, 1] = round.(TrophInd[:, 1], digits = 2)
+# TrophInd[:, 2] = TrophInd[:, 2].-1
+# TrophInd[256, 2] = 1.0 # For some reason last line had floating point error
+rename!(TrophInd, Symbol("species") => :Species, Symbol("TrophInd") => :TL)
+TrophInd[:, :TL] = round.(TrophInd[:, :TL].-1, digits = 2)
+order_indices = indexin(spain_names, TrophInd[:, :Species])
+TrophInd = TrophInd[order_indices, :]
+TrophInd_vector = TrophInd[:, :TL]
+
+herbivore_names = TrophInd[TrophInd[:, :TL] .== 1, :Species]
+
 # Turn iberian_interact_matrix into a DataFrame
 # Convert the iberian_interact_matrix into a DataFrame with appropriate column and row names
 self_regulation = 0.001
@@ -310,10 +324,10 @@ strict_species_niches = CSV.File(joinpath(dir, "DFs/iberian_species_niches_withV
 order_indices = indexin(spain_names, strict_species_niches[:, :Species])
 strict_species_niches = strict_species_niches[order_indices, :]
 
-herbivore_names = CSV.File(joinpath(dir, "DFs/herbivore_names.csv")) |> DataFrame
-herbivore_names = convert(Vector{String}, herbivore_names[:, 2])
-binary_vector = [name in herbivore_names ? 1 : 0 for name in names(iberian_interact_df)]
-opposite_binary_vector = [name in herbivore_names ? 0 : 1 for name in names(iberian_interact_df)]
+# herbivore_names = CSV.File(joinpath(dir, "DFs/herbivore_names.csv")) |> DataFrame
+# herbivore_names = convert(Vector{String}, herbivore_names[:, 2])
+# binary_vector = [name in herbivore_names ? 1 : 0 for name in names(iberian_interact_df)]
+# opposite_binary_vector = [name in herbivore_names ? 0 : 1 for name in names(iberian_interact_df)]
 
 ###################### GENERATE Ki(z) DimArray ################
 ###############################################################
