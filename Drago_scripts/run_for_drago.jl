@@ -16,7 +16,7 @@ include(joinpath(dir, "Scripts/kernels_for_drago.jl"))
 include(joinpath(dir, "Scripts/efficient_setup_for_drago.jl"))
 include(joinpath(dir, "Scripts/human_footprint_for_drago.jl"))
 include(joinpath(dir, "Scripts/New_metrics_for_drago.jl"))
-include(joinpath(dir, "Scripts/Implicit_competition_for_herbivores.jl"))
+include(joinpath(dir, "Scripts/Implicit_competition_for_herbivores_for_drago.jl"))
 
 initial_abundance = 0.41
 DA_with_abundances = deepcopy(DA)
