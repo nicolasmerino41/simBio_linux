@@ -1,3 +1,4 @@
+num_species = 256
 using Pkg
 dir = "/workdir/"
 # Packages
