@@ -35,7 +35,6 @@ val juliaTask = JuliaTask(
     HostFile((workDirectory / "DFs/iberian_species_niches_withbinned_TH.csv").toString, "/workdir/iberian_species_niches_withbinned_TH.csv"),
     HostFile((workDirectory / "DFs/iberian_species_niches_withLaxNiche.csv").toString, "/workdir/iberian_species_niches_withLaxNiche.csv"),
     HostFile((workDirectory / "DFs/iberian_species_niches_withVeryStrictNiche.csv").toString, "/workdir/iberian_species_niches_withVeryStrictNiche.csv"),
-    HostFile((workDirectory / "DFs/herbivore_names.csv").toString, "/workdir/herbivore_names.csv"),
     HostFile((workDirectory / "DFs/Species_spain_df.csv").toString, "/workdir/Species_spain_df.csv"),
     HostFile((workDirectory / "Objects/npp_DA.jls").toString, "/workdir/npp_DA.jls"),
     HostFile((workDirectory / "Objects/updated_utmraster.tif").toString, "/workdir/updated_utmraster.tif"),
