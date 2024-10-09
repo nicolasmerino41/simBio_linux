@@ -33,25 +33,10 @@ function average_shannon_index(array_output, position; modified = false, caca = 
     end
 
     # Compute and return the average Shannon index
-    if length(shannon_indices) == 0
-        return 0.0
-    else
-        return mean(shannon_indices)
-    end
+    return mean(shannon_indices)
 end
 ############### Mean Trophic Level #################
 ####################################################
-TrophInd = CSV.File(joinpath(dir, "TLs.csv")) |> DataFrame
-TrophInd = TrophInd[1:256, 1:2]
-TrophInd[findall(x -> x < 1.05, TrophInd[:, 2]), 2] .= 1.0
-# TrophInd[:, 2] = TrophInd[:, 2].-1
-# TrophInd[256, 2] = 1.0 # For some reason last line had floating point error
-rename!(TrophInd, Symbol("Column1") => :Species, Symbol("TL") => :TL)
-TrophInd[findall(x -> 1.98 < x < 2.05, TrophInd[:, 2]), 2] .= 2.0
-order_indices = indexin(spain_names, TrophInd[:, :Species])
-TrophInd = TrophInd[order_indices, :]
-TrophInd_vector = TrophInd[:, :TL]
-
 # Function to calculate mean trophic level
 function calculate_mean_tl(array_output, position; modified = false, caca = false)
     if !modified && !caca
@@ -108,11 +93,7 @@ function average_bbp(array_output, position; modified = false, caca = false)
             bbp_vector = push!(bbp_vector, NaN)
         end
     end
-    if length(filter(!isnan, bbp_vector)) == 0
-        return 0.0
-    else
-        return mean(filter(!isnan, bbp_vector))
-    end 
+    return mean(filter(!isnan, bbp_vector))
 end
 
 ######### RICHNESS SIMILARITY ################
@@ -161,7 +142,7 @@ function richness_similarity(array_output, position; modified = false, caca = fa
 end
 
 # # Iterate over the grid and create new SVector replacing 10.0 with 500.0
-# triall = deserialize("Objects\\DA_with_abundances_all10.jls")::DimArray{MyStructs256{Float64},2}
+# triall = deserialize("Objects/DA_with_abundances_all10.jls")::DimArray{MyStructs256{Float64},2}
 # for row in axes(triall, 1), col in axes(triall, 2)
 #     old_vector = triall[row, col].a
 #     new_vector = SVector{256, Float64}(replace(old_vector, 10.0 => 500.0))  # Create a new SVector
@@ -211,3 +192,28 @@ function total_biomass(array_output, position; modified = false, caca = false)
         combined_abundances = array_output.*lambda_DA[position]
     end
 end
+######### MEAN_N_OF_SPECIES ################
+function mean_n_of_species(array_output, position; modified = false, caca = false)
+    if !modified && !caca
+        # Merge birmmals and herps
+        combined_abundances = (deepcopy(array_output[end].herps) + deepcopy(array_output[end].birmmals)).*lambda_DA[position]
+    elseif modified && !caca
+        combined_abundances = array_output[end].state.*lambda_DA[position]
+    end
+    if caca
+        combined_abundances = array_output.*lambda_DA[position]
+    end
+    vector = Float64[]
+    # Calculate presence/absence and simulated richness
+    for cell in idx
+        if !any(isnan, combined_abundances[cell].a)
+            abundances = combined_abundances[cell].a
+            presence = abundances .> body_mass_vector
+            simulated_richness = sum(presence)
+            vector = push!(vector, simulated_richness)
+        end
+    end
+    return mean(vector)
+end
+
+############### STABILITY METRICS ################

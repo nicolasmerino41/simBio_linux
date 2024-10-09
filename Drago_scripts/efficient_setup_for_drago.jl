@@ -203,29 +203,6 @@ for row in axes(DA, 1), col in axes(DA, 2)
         DA_with_abundances[row, col] = MyStructs256(new_a)
     end
 end
-# I MOVED THIS TO ITERATION
-# DA_birmmals_with_abundances = deepcopy(DA_birmmals)
-# # Iterate over rows and columns
-# for row in axes(DA_birmmals, 1), col in axes(DA_birmmals, 2)
-#     current = DA_birmmals[row, col]
-#     empty_birmmals = MyBirmmals(fill(0.0, 207))
-    
-#     if current != empty_birmmals
-#         new_a = [current.a[i] != 0.0 ? 0.01 : current.a[i] for i in 1:207]
-#         DA_birmmals_with_abundances[row, col] = MyBirmmals(new_a)
-#     end
-# end
-# DA_herps_with_abundances = deepcopy(DA_herps)
-# # Iterate over rows and columns
-# for row in axes(DA, 1), col in axes(DA, 2)
-#     current = DA[row, col]
-#     empty_struct = MyHerps(fill(0.0, 49))
-    
-#     if current != empty_struct
-#         new_a = [current.a[i] != 0.0 ? 0.01 : current.a[i] for i in 1:49]
-#         DA_herps_with_abundances[row, col] = MyHerps(new_a)
-#     end
-# end
 
 DA_sum = deserialize(joinpath(dir, "Objects/DA_sum.jls"))
 # Turnin DA_sum(float) into boolean
@@ -286,7 +263,6 @@ iberian_interact_NA = NamedArray(
     ("Species", "Species")
 )
 iberian_interact_NA = iberian_interact_NA[spain_names, spain_names]
-
 
 ##################### NEW NICHES ###########################
 ######## bio rasters  ##############

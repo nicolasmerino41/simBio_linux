@@ -46,23 +46,6 @@ function get_neighbors(matrix, row, col)
     end
     return neighbors
 end
-#################### when_NA ###################################
-######################################################################
-function when_NA(array_output)
-    for time in 1:length(array_output)
-        value = 0.0
-        for index in idx
-            if any(isinf, array_output[time].state[index].a) || any(isnan, array_output[time].state[index].a)
-              println("Time:", time, " Index:", index)
-              value += 1
-            end
-        end
-        if value != 0
-            println("In time ", time,", ", value, " NA's where generated for the first time")
-            return
-        end
-    end
-end
 
 web = CSV.read(joinpath(dir, "TetraEU_pairwise_interactions.csv"), DataFrame)
 
@@ -127,11 +110,29 @@ iberian_interact_matrix = float(iberian_interact_matrix)
 interaction_count = sum(iberian_interact_matrix .== 1)
 # println("The number of 1s in the iberian_interact_matrix is $interaction_count")
 
+#### STABLISHING TROPHIC LEVELS AND HERBIVORE NAMES
+TrophInd = CSV.File(joinpath(dir, "TLs.csv")) |> DataFrame
+TrophInd = TrophInd[1:256, 2:3]
+TrophInd[:, 1] = round.(TrophInd[:, 1], digits = 2)
+# TrophInd[:, 2] = TrophInd[:, 2].-1
+# TrophInd[256, 2] = 1.0 # For some reason last line had floating point error
+rename!(TrophInd, Symbol("species") => :Species, Symbol("TrophInd") => :TL)
+TrophInd[:, :TL] = round.(TrophInd[:, :TL].-1, digits = 2)
+order_indices = indexin(spain_names, TrophInd[:, :Species])
+TrophInd = TrophInd[order_indices, :]
+TrophInd_vector = TrophInd[:, :TL]
+
+herbivore_names = TrophInd[TrophInd[:, :TL] .== 1, :Species]
+
 # Turn iberian_interact_matrix into a DataFrame
 # Convert the iberian_interact_matrix into a DataFrame with appropriate column and row names
 self_regulation = 0.001
 iberian_interact_df = DataFrame(iberian_interact_matrix, species_names)
-function turn_adj_into_inter(adjacencyy, sigma, epsilon)
+# Turn iberian_interact_matrix into a DataFrame
+# Convert the iberian_interact_matrix into a DataFrame with appropriate column and row names
+self_regulation = 0.001
+iberian_interact_df = DataFrame(iberian_interact_matrix, species_names)
+function turn_adj_into_inter(adjacencyy, sigma, epsilon, self_regulation, beta)
     adjacency = deepcopy(adjacencyy)
     epsilon = float(epsilon)
     u = adjacency
@@ -202,29 +203,6 @@ for row in axes(DA, 1), col in axes(DA, 2)
         DA_with_abundances[row, col] = MyStructs256(new_a)
     end
 end
-# I MOVED THIS TO ITERATION
-# DA_birmmals_with_abundances = deepcopy(DA_birmmals)
-# # Iterate over rows and columns
-# for row in axes(DA_birmmals, 1), col in axes(DA_birmmals, 2)
-#     current = DA_birmmals[row, col]
-#     empty_birmmals = MyBirmmals(fill(0.0, 207))
-    
-#     if current != empty_birmmals
-#         new_a = [current.a[i] != 0.0 ? 0.01 : current.a[i] for i in 1:207]
-#         DA_birmmals_with_abundances[row, col] = MyBirmmals(new_a)
-#     end
-# end
-# DA_herps_with_abundances = deepcopy(DA_herps)
-# # Iterate over rows and columns
-# for row in axes(DA, 1), col in axes(DA, 2)
-#     current = DA[row, col]
-#     empty_struct = MyHerps(fill(0.0, 49))
-    
-#     if current != empty_struct
-#         new_a = [current.a[i] != 0.0 ? 0.01 : current.a[i] for i in 1:49]
-#         DA_herps_with_abundances[row, col] = MyHerps(new_a)
-#     end
-# end
 
 DA_sum = deserialize(joinpath(dir, "DA_sum.jls"))
 DA_sum_r = reverse(DA_sum, dims=1)
@@ -278,7 +256,6 @@ iberian_interact_NA = NamedArray(
 )
 iberian_interact_NA = iberian_interact_NA[spain_names, spain_names]
 
-
 ##################### NEW NICHES ###########################
 ######## bio rasters  ##############
 bio5_DA = deserialize(joinpath(dir, "bio5.jls"))
@@ -315,37 +292,11 @@ strict_species_niches = CSV.File(joinpath(dir, "iberian_species_niches_withVeryS
 order_indices = indexin(spain_names, strict_species_niches[:, :Species])
 strict_species_niches = strict_species_niches[order_indices, :]
 
-herbivore_names = CSV.File(joinpath(dir, "herbivore_names.csv")) |> DataFrame
-herbivore_names = convert(Vector{String}, herbivore_names[:, 2])
-binary_vector = [name in herbivore_names ? 1 : 0 for name in names(iberian_interact_df)]
-opposite_binary_vector = [name in herbivore_names ? 0 : 1 for name in names(iberian_interact_df)]
+# herbivore_names = CSV.File(joinpath(dir, "herbivore_names.csv")) |> DataFrame
+# herbivore_names = convert(Vector{String}, herbivore_names[:, 2])
+# binary_vector = [name in herbivore_names ? 1 : 0 for name in names(iberian_interact_df)]
+# opposite_binary_vector = [name in herbivore_names ? 0 : 1 for name in names(iberian_interact_df)]
 
-function int_Gr_for_biotic(state::MyStructs256, self_regulation::AbstractFloat, npp::Union{AbstractFloat, AbstractArray}, bio5::AbstractFloat, bio6::AbstractFloat, bio12::AbstractFloat)
-    return MyStructs256(SVector{256, Float64}(self_regulation * (npp .+ 0.1) .*
-        1 ./ (1 .+ abs.(bio5 .- species_niches.mean_bio5) ./ species_niches.sd_bio5) .*
-        1 ./ (1 .+ abs.(bio6 .- species_niches.mean_bio6) ./ species_niches.sd_bio6) .*
-        1 ./ (1 .+ abs.(bio12 .- species_niches.mean_bio12) ./ species_niches.sd_bio12) .*
-        state.a .* (1.0 .- (state.a ./ (npp .* binary_vector .+ npp .* opposite_binary_vector ./ 100.0)))))
-end
-
-function int_Gr_for_biotic_k(state::MyStructs256, self_regulation::AbstractFloat, k_DA::MyStructs256)
-    return MyStructs256(SVector{256, Float64}(self_regulation .* (k_DA.a .+ 0.00001) .*
-        state.a .* (1.0 .- (state.a ./ (k_DA.a .* binary_vector .+ k_DA.a .* opposite_binary_vector)))))
-end
-
-function lax_int_Gr(state::MyStructs256, self_regulation::AbstractFloat, npp::Union{AbstractFloat, AbstractArray}, bio5::AbstractFloat, bio6::AbstractFloat, bio12::AbstractFloat)
-    return MyStructs256(SVector{256, Float64}(self_regulation * (npp + 0.1) .*
-        (1 ./ (1 .+ abs.(bio5 .- lax_species_niches.mean_bio5) ./ lax_species_niches.sd_bio5)) .*
-        (1 ./ (1 .+ abs.(bio6 .- lax_species_niches.mean_bio6) ./ lax_species_niches.sd_bio6)) .*
-        (1 ./ (1 .+ abs.(bio12 .- lax_species_niches.mean_bio12) ./ lax_species_niches.sd_bio12)) .*
-        state.a .* (1.0 - (state.b / (npp + 0.1)))))
-end
-
-function trophic_optimized(abundances, full_IM)
-    # Calculate the weighted interaction directly
-    interaction = full_IM * abundances.a
-    return MyStructs256(SVector{256, Float64}(interaction .* abundances.a))
-end
 ###################### GENERATE Ki(z) DimArray ################
 ###############################################################
 # Initialize the empty DA arrays for each suitability method (same shape as k_DA)
@@ -427,65 +378,3 @@ end
 
 dimensions = (125, 76)
 idx_tupled = [(i, j) for i in 1:dimensions[1], j in 1:dimensions[2]]
-
-lax_climatic_niche_rule = Cell{Tuple{:state, :npp, :bio5, :bio6, :bio12}, :state}() do data, (state, npp, bio5, bio6, bio12), I
-    if any(isinf, state.a) || any(isnan, state.a)
-        @error "state has NA values"
-        println(I)
-    end
-    return state + lax_int_Gr(state, self_regulation, npp, bio5, bio6, bio12)
-end
-
-biotic_rule_k = Cell{Tuple{:state, :k_DA}, :state}() do data, (state, k_DA), I
-    # if any(isinf, state.a) || any(isnan, state.a)
-    #     @error "state has NA values"
-    #     println(I)
-    # end
-    merged_state = state + 
-        int_Gr_for_biotic_k(state, self_regulation, k_DA)  +
-        trophic_optimized(state, full_IM)
-    return MyStructs256(SVector{256, Float64}(max.(0.0, merged_state.a)))
-end
-
-biotic_rule_k_herps = Cell{Tuple{:herps, :birmmals, :k_DA}, :herps}() do data, (herps, birmmals, k_DA), I
-    # if any(isinf, birmmals.a) || any(isnan, birmmals.a)
-    #     @error "state has NA values in birmmals"
-    #     println(I)
-    # end
-    # if any(isinf, herps.a) || any(isnan, herps.a)
-    #     @error "state has NA values in herps"
-    #     println(I)
-    # end
-    # if I == study_cell
-    #     push!(abundances, (deepcopy(herps) + deepcopy(birmmals)).a)
-    # end
-    merged_state = deepcopy(herps) + deepcopy(birmmals) +
-        int_Gr_for_biotic_k(deepcopy(herps) + deepcopy(birmmals), self_regulation, k_DA)  +
-        trophic_optimized(deepcopy(herps) + deepcopy(birmmals), full_IM)
-    return MyHerps(SVector{49, Float64}(max.(0.0000000001, merged_state.a[1:49])))
-end
-
-biotic_rule_k_birmmals = Cell{Tuple{:herps, :birmmals, :k_DA}, :birmmals}() do data, (herps, birmmals, k_DA), I
-    # if typeof(birmmals) != MyBirmmals{Float64}
-    #     @error "birmmals is not MyBirmmals"
-    # end
-    # if typeof(herps) != MyHerps{Float64}
-    #     @error "herps is not MyHerps"
-    # end
-    # if any(isinf, birmmals.a) || any(isnan, birmmals.a)
-    #     @error "state has NA values in birmmals"
-    #     println(I)
-    # end
-    # if any(isinf, herps.a) || any(isnan, herps.a)
-    #     @error "state has NA values in herps"
-    #     println(I)
-    # end
-    merged_state = deepcopy(herps) + deepcopy(birmmals) +
-        int_Gr_for_biotic_k(deepcopy(herps) + deepcopy(birmmals), self_regulation, k_DA)  +
-        trophic_optimized(deepcopy(herps) + deepcopy(birmmals), full_IM)
-    return MyBirmmals(SVector{207, Float64}(max.(0.0000000001, merged_state.a[50:256])))
-end
-
-function (kernel::CustomKernel)(distance)
-    return exp(-(distance^2) / (2*(kernel.α^2)))
-end

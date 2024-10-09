@@ -1,5 +1,4 @@
 hf = Rasters.Raster(joinpath(dir, "wildareas-v3-2009-human-footprint.tif"))
-
 hf_reprojected = resample(hf; to=utmraster)
 
 hf_spain = map(x -> Float32(x), hf_reprojected)

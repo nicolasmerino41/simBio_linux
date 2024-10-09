@@ -28,7 +28,7 @@ val drago =
     "nmerino",
     "drago.csic.es",
     partition = "express",
-    threads = 10,
+    // threads = 10,
     //cpuPerTask = 1,
     //memory = 4 gigabytes,
     time = 1 hour,
