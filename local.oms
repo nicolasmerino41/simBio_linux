@@ -11,7 +11,7 @@ val myseed = Val[Int]
 
 val juliaTask = JuliaTask(
   script = (workDirectory / "run_for_OM.jl"),
-  libraries = Seq("CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase", "ArchGDAL"),
+  libraries = Seq("ArchGDAL", "CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase"),
   install = Seq(
     """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))'""",
     """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/Dispersal.jl", rev="dev"))'"""
@@ -47,6 +47,7 @@ val juliaTask = JuliaTask(
     HostFile((workDirectory / "efficient_setup_for_OM.jl").toString, "/workdir/efficient_setup_for_OM.jl"),
     HostFile((workDirectory / "human_footprint_for_OM.jl").toString, "/workdir/human_footprint_for_OM.jl"),
     HostFile((workDirectory / "kernels_for_OM.jl").toString, "/workdir/kernels_for_OM.jl"),
+    HostFile((workDirectory / "Implicit_competition_for_herbivores_for_OM.jl").toString, "/workdir/Implicit_competition_for_herbivores_for_OM.jl"),
     HostFile((workDirectory / "New_metrics_for_OM.jl").toString, "/workdir/New_metrics_for_OM.jl")
   ),
   version = "1.10.4"
@@ -60,13 +61,13 @@ val juliaTask = JuliaTask(
   outputs += avg_shannon mapped "avg_shannon"
 )
 
-val env = LocalEnvironment(1)
+val env = LocalEnvironment(2)
 
 // PSEEvolution to replace DirectSampling
 PSEEvolution(
   evaluation = juliaTask,
-  parallelism = 3,
-  termination = 1, // Set according to your needs
+  parallelism = 2,
+  termination = 20, // Set according to your needs
   genome = Seq(
     epsilon in (0.33, 3.0),
     sigma in (0.0001, 1.0),

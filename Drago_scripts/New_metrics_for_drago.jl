@@ -6,7 +6,11 @@ function shannon_index(abundance_vector)
         return 0.0  # Handle case where total abundance is zero
     end
     proportions = abundance_vector / total_abundance
-    return -sum(p * log(p) for p in proportions if p > 0)
+    positive_p = [p for p in proportions if p > 0]
+    if isempty(positive_p)
+        return 0.0  # Return 0.0 if no positive proportions
+    end
+    return -sum(p * log(p) for p in positive_p)
 end
 
 # Function to compute the average Shannon index over specified indices

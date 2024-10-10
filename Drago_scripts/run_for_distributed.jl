@@ -1,20 +1,39 @@
-num_species = 256
-using Pkg
-dir = "/workdir/"
 # Packages
-using CSV, DataFrames
-using Distributions, NamedArrays, StaticArrays
-using DynamicGrids, Dispersal
-using DimensionalData, Rasters, Serialization, ArchGDAL
-using OrderedCollections, StatsBase
+using Distributed
+
+@everywhere begin
+    using Base.Iterators:product  
+    using CSV, DataFrames
+    using Distributions, NamedArrays, StaticArrays
+    using DynamicGrids, Dispersal
+    using DimensionalData, Rasters, Serialization, ArchGDAL
+    using OrderedCollections, StatsBase
+
+    dir = pwd()
+    num_species = 256
+end
+
+
 
 # Setup code
-include(joinpath(dir, "HerpsVsBirmmals.jl"))
-include(joinpath(dir, "kernels_for_OM.jl"))
-include(joinpath(dir, "efficient_setup_for_OM.jl"))
-include(joinpath(dir, "human_footprint_for_OM.jl"))
-include(joinpath(dir, "New_metrics_for_OM.jl"))
-include(joinpath(dir, "Implicit_competition_for_herbivores_for_OM.jl"))
+@everywhere include(joinpath(dir, "Scripts/HerpsVsBirmmals.jl"))
+println("Break1")
+@everywhere include(joinpath(dir, "Scripts/kernels_for_drago.jl"))
+println("Break2")
+@everywhere include(joinpath(dir, "Scripts/efficient_setup_for_drago.jl"))
+println("Break3")
+@everywhere include(joinpath(dir, "Scripts/human_footprint_for_drago.jl"))
+println("Break4")
+@everywhere include(joinpath(dir, "Scripts/New_metrics_for_drago.jl"))
+println("Break5")
+@everywhere include(joinpath(dir, "Scripts/Implicit_competition_for_herbivores.jl"))
+println("Break6")
+########## DISTRIBUTING ##########
+# @everywhere DA = DA
+# print(DA)
+# @everywhere k_DA_hf_multiplicative = k_DA_hf_multiplicative
+# @everywhere npp_DA = npp_DA
+# @everywhere DA_richness = DA_richness
 
 initial_abundance = 0.41
 DA_with_abundances = deepcopy(DA)
@@ -25,10 +44,10 @@ for row in axes(DA, 1), col in axes(DA, 2)
     end
 end
 
-const DA_with_abundances_const = deepcopy(DA_with_abundances)
-const iberian_interact_NA_const = deepcopy(iberian_interact_NA)
+@everywhere const DA_with_abundances_const = deepcopy(DA_with_abundances)
+@everywhere const iberian_interact_NA_const = deepcopy(iberian_interact_NA)
 # Function to save parameters, grid type (k_DA name), and metrics to CSV and append plots to the final PDFs
-function run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
+@everywhere function run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
 
     k_DA_name = "k_DA_hf_multiplicative"
     position = 1
@@ -114,23 +133,45 @@ function run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
     final_state = p[end].state
     NaNs = any(i -> any(isnan, final_state[idx[i][1], idx[i][2]].a), 1:length(idx)) ? 1.0 : 0.0
 
-    return (
-        avg_shannon = avg_shannon,
-        avg_bbp = avg_bbp,
-        richness_similarity = richness_sim,
-        alive_predators = alive_preds,
-        mean_tl = mean_tl,
-        mean_n_of_species = mean_sp,
-        # Threads = Threads.nthreads(),
+    # println(NaNs)
+    # Step 2: Save the parameters, grid type, and metrics in a CSV
+    results_row = DataFrame(
+        sigma = sigma,
+        epsilon = epsilon,
+        alfa = alfa,
+        k_DA_name = k_DA_name,
+        sigma_comp = sigma_comp,
+        assymetry = assymetry,
+        avg_shannon = round(avg_shannon, digits = 2),
+        avg_bbp = round(avg_bbp, digits = 2),
+        richness_similarity = round(richness_sim, digits = 2),
+        alive_predators = round(alive_preds, digits = 2),
+        mean_tl = round(mean_tl, digits = 2),
+	    mean_n_of_species = round(mean_sp, digits = 2),
         NaNs = NaNs
     )
+    serialize("resultados_distribuidos/outputs/$sigma-$epsilon-$alfa-$sigma_comp-$assymetry.jls", p[end].state)
+    # Append or create the CSV file
+    csv_filename = "resultados_distribuidos/DirectSamplingResults.csv"
+    if isfile(csv_filename)
+        CSV.write(csv_filename, results_row, append = true)
+    else
+        CSV.write(csv_filename, results_row)
+    end
+    return 1.0	
 end
 
-avg_shannon, avg_bbp, richness_sim, alive_preds, mean_tl, mean_sp, NaNs = run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
+# Simulation parameters
+@everywhere sigmas = [0.0001, 0.001, 0.005, 0.01, 0.05, 0.07, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5, 2.0, 3.0]
+@everywhere epsilons = [0.01, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0]
+@everywhere alfa_values = [0.001, 0.01, 0.05, 0.1, 0.3, 0.6, 0.9, 1.1]
+@everywhere sigma_comp_values = [0.001, 0.1, 0.5, 1.0, 1.5, 2.0]
+@everywhere assymetry_values = [0.0, 0.33, 0.66, 1.0]
 
-####################################################################
-println("Epsilon: ", round(epsilon, digits = 2), ", Sigma: ", round(sigma, digits = 3), ", Alfa: ", round(alfa, digits = 2), ", Sigma_comp: ", round(sigma_comp, digits = 2), ", Assymetry: ", round(assymetry, digits = 2))
-# println("The richness_eval was: ", round(richness_eval, digits = 2))
-println("The average_shannon was: ", round(avg_shannon, digits = 2))
-println("The biomass_distribution was: ", round(avg_bbp, digits = 2))
-# println("MAE was: ", round(mae, digits = 2))
+k_DA_list = [k_DA.DA_multiplicative, k_DA.DA_additive, k_DA.DA_min, k_DA.DA_harmonic, k_DA.DA_geometric]
+k_DA_names = ["multiplicative", "additive", "min", "harmonic", "geometric"]
+positions = [1, 2, 3, 4, 5]
+
+@everywhere iteracciones = collect(product(sigmas, epsilons, alfa_values, sigma_comp_values, assymetry_values))
+addprocs(40,exeflags=["--project","--threads=1"])
+result = pmap(args->run_simulation(args...),iteracciones)

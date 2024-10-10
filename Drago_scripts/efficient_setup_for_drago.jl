@@ -317,6 +317,8 @@ DA_harmonic = DimArray(reshape([MyStructs256(SVector{256, Float64}(fill(0.0, 256
 # Define the herbivore carnivore vector
 herb_carv_svector = SVector{256, Float64}([name in herbivore_names ? 1.0 : 0.00000001 for name in spain_names])
 herb_carv_vector = [name in herbivore_names ? 1.0 : 0.00000001 for name in spain_names]
+@everywhere herb_carv_svector = deepcopy(herb_carv_svector)
+@everywhere herb_carv_vector = deepcopy(herb_carv_vector)
 
 # Loop through the axes of the DA arrays
 for row in axes(DA_multiplicative, 1), col in axes(DA_multiplicative, 2)
