@@ -5,7 +5,7 @@ val myseed = Val[Int]
 
 val juliaTask = JuliaTask(
   script = (workDirectory / "empty.jl"),
-  libraries = Seq("ArchGDAL", "CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase"),
+  libraries = Seq("CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase", "ArchGDAL"),
   install = Seq(
     """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))'""",
     """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/Dispersal.jl", rev="dev"))'"""
@@ -13,7 +13,7 @@ val juliaTask = JuliaTask(
   version = "1.10.4"
 ) set(
   inputs += epsilon.mapped,
-  outputs += epsilon mapped "epsilon",
+  outputs += epsilon mapped "epsilon",  
   resources += (workDirectory / "DFs/gbif_sizes.csv"),
   resources += (workDirectory / "DFs/TetraEU_pairwise_interactions.csv"),
   resources += (workDirectory / "DFs/TetraEU_generic_diet.csv"),
@@ -48,7 +48,8 @@ val juliaTask = JuliaTask(
   resources += (workDirectory / "New_metrics_for_OM.jl")
 )
 
-val env =
+val env = LocalEnvironment(1)
+val drago =
   SLURMEnvironment(
     "nmerino",
     "drago.csic.es",
@@ -61,5 +62,5 @@ val env =
 // PSEEvolution to replace DirectSampling
 DirectSampling(
   evaluation = juliaTask,
-  sampling = (epsilon in (1.0 to 10.0 by 1.0))
-) hook display on env
+  sampling = (epsilon in (10.0 to 11.0 by 1.0))
+) hook display on drago

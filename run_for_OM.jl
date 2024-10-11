@@ -1,6 +1,6 @@
 num_species = 256
 using Pkg
-dir = "/workdir/"
+dir = ""
 # Packages
 using CSV, DataFrames
 using Distributions, NamedArrays, StaticArrays

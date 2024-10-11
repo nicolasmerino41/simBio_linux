@@ -45,7 +45,7 @@ val juliaTask = JuliaTask(
   resources += (workDirectory / "DFs/iberian_species_niches_withVeryStrictNiche.csv"),
   resources += (workDirectory / "DFs/Species_spain_df.csv"),
   resources += (workDirectory / "Objects/npp_DA.jls"),
-  resources += (workDirectory / "Objects/updated_utmraster.tif"),
+  resources += (workDirectory / "Rasters/updated_utmraster.tif"),
   resources += (workDirectory / "Objects/DA.jls"),
   resources += (workDirectory / "Objects/DA_birmmals.jls"),
   resources += (workDirectory / "Objects/DA_herps.jls"),
@@ -55,10 +55,11 @@ val juliaTask = JuliaTask(
   resources += (workDirectory / "efficient_setup_for_OM.jl"),
   resources += (workDirectory / "human_footprint_for_OM.jl"),
   resources += (workDirectory / "kernels_for_OM.jl"),
+  resources += (workDirectory / "Implicit_competition_for_herbivores_for_OM.jl"),
   resources += (workDirectory / "New_metrics_for_OM.jl")
 )
 
-val env =
+val drago =
   SLURMEnvironment(
     "nmerino",
     "drago.csic.es",
@@ -72,7 +73,7 @@ val env =
 PSEEvolution(
   evaluation = juliaTask,
   parallelism = 3,
-  termination = 1, // Set according to your needs
+  termination = 2, // Set according to your needs
   genome = Seq(
     epsilon in (0.33, 3.0),
     sigma in (0.0001, 1.0),
@@ -85,4 +86,4 @@ PSEEvolution(
     avg_shannon in (0.0 to 6.0 by 2.0),
     ),
   stochastic = Stochastic(seed = myseed)
-) hook (workDirectory / "results_OM", frequency = 10) on env
+) hook (workDirectory / "results_OM", frequency = 10) on drago
