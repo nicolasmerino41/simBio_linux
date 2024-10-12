@@ -73,7 +73,7 @@ val drago =
 PSEEvolution(
   evaluation = juliaTask,
   parallelism = 3,
-  termination = 2, // Set according to your needs
+  termination = 10, // Set according to your needs
   genome = Seq(
     epsilon in (0.33, 3.0),
     sigma in (0.0001, 1.0),
