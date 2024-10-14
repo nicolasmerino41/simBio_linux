@@ -92,7 +92,7 @@ function run_simulation(sigma, epsilon, alfa, sigma_comp, assymetry)
 
     # Run the simulation
     array_output = ResultOutput(
-        pepe_state; tspan = 1:10,
+        pepe_state; tspan = 1:500,
         mask = Matrix(DA_sum)
     )
     # println("output done")

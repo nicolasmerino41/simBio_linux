@@ -63,27 +63,27 @@ val drago =
   SLURMEnvironment(
     "nmerino",
     "drago.csic.es",
-    partition = "express",
-    memory = 40 gigabytes,
-    time = 1 hour,
+    partition = "generic",
+    memory = 20 gigabytes,
+    time = 2 hour,
     workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
   )
 
 // PSEEvolution to replace DirectSampling
 PSEEvolution(
   evaluation = juliaTask,
-  parallelism = 3,
-  termination = 10, // Set according to your needs
+  parallelism = 100,
+  termination = 450, // Set according to your needs
   genome = Seq(
-    epsilon in (0.33, 3.0),
-    sigma in (0.0001, 1.0),
+    epsilon in (0.01, 3.0),
+    sigma in (0.0001, 3.0),
     alfa in (0.001, 1.0),
-    sigma_comp in (0.00001, 1.0),
+    sigma_comp in (0.00001, 3.0),
     assymetry in (0.0, 1.0)
   ),
   objective = Seq(
-    avg_bbp in (1.0 to 3.0 by 1.0),
-    avg_shannon in (0.0 to 6.0 by 2.0),
+    avg_bbp in (1.7 to 3.5 by 0.2),
+    avg_shannon in (0.0 to 6.0 by 0.25)
     ),
   stochastic = Stochastic(seed = myseed)
 ) hook (workDirectory / "results_OM", frequency = 10) on drago
