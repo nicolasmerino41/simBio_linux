@@ -19,3 +19,6 @@ results/
 results1/
 
 *.omr
+results_PSE.csv
+results_OSE.csv
+

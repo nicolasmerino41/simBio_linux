@@ -7,7 +7,7 @@ val avg_shannon = Val[Double]
 val avg_bbp = Val[Double]
 
 // Seed declaration for random number generation
-val myseed = Val[Int]
+// val myseed = Val[Int]
 
 val juliaTask = JuliaTask(
   script = (workDirectory / "inverse_run_for_OM.jl"),
@@ -63,8 +63,8 @@ val drago =
   SLURMEnvironment(
     "nmerino",
     "drago.csic.es",
-    partition = "long",
-    memory = 20 gigabytes,
+    partition = "generic",
+    memory = 22 gigabytes,
     time = 2 hour,
     workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
   )
@@ -72,8 +72,8 @@ val drago =
 // OSE
 OSEEvolution(
   evaluation = juliaTask,
-  parallelism = 200,
-  termination = 1800,
+  parallelism = 300,
+  termination = 2000,
   origin = Seq(
     epsilon in (0.01 to 3.1 by 1.0),
     sigma in (0.001 to 3.1 by 0.5),
@@ -82,6 +82,5 @@ OSEEvolution(
     assymetry in (0.0 to 1.0 by 0.3)),
   objective = Seq(
     avg_bbp under 0.45,
-    avg_shannon under 1.55),
-  stochastic = Stochastic(seed = myseed)
-) hook (workDirectory / "resultsOSE.omr", frequency = 10) on drago
+    avg_shannon under 1.55)
+) hook (workDirectory / "results_ose_15_10.omr", frequency = 10) on drago

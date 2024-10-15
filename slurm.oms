@@ -7,7 +7,7 @@ val avg_shannon = Val[Double]
 val avg_bbp = Val[Double]
 
 // Seed declaration for random number generation
-val myseed = Val[Int]
+// val myseed = Val[Int]
 
 val juliaTask = JuliaTask(
   script = (workDirectory / "run_for_OM.jl"),
@@ -64,7 +64,7 @@ val drago =
     "nmerino",
     "drago.csic.es",
     partition = "generic",
-    memory = 20 gigabytes,
+    memory = 22 gigabytes,
     time = 2 hour,
     workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
   )
@@ -72,8 +72,8 @@ val drago =
 // PSEEvolution to replace DirectSampling
 PSEEvolution(
   evaluation = juliaTask,
-  parallelism = 100,
-  termination = 450, // Set according to your needs
+  parallelism = 300,
+  termination = 2000, // Set according to your needs
   genome = Seq(
     epsilon in (0.01, 3.0),
     sigma in (0.0001, 3.0),
@@ -84,6 +84,5 @@ PSEEvolution(
   objective = Seq(
     avg_bbp in (1.7 to 3.5 by 0.2),
     avg_shannon in (0.0 to 6.0 by 0.25)
-    ),
-  stochastic = Stochastic(seed = myseed)
-) hook (workDirectory / "results_OM", frequency = 10) on drago
+    )
+) hook (workDirectory / "results_pse_15_10", frequency = 10) on drago
