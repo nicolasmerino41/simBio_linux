@@ -304,7 +304,7 @@ end
 ###############################################################
 ###############################################################
 struct CustomKernel <: KernelFormulation
-    α::AbstractFloat
+    a::AbstractFloat
 end
 
 abstract type AbstractKernelNeighborhood end
@@ -322,7 +322,7 @@ function CustomDispersalKernel(;
 end
 
 function (kernel::CustomKernel)(distance)
-    return exp(-(distance^2) / (2*(kernel.α^2)))
+    return exp(-(distance^2) / (2*(kernel.a^2)))
 end
 end
 
