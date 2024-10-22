@@ -63,7 +63,7 @@ val drago =
   SLURMEnvironment(
     "nmerino",
     "drago.csic.es",
-    partition = "generic",
+    partition = "long",
     memory = 22 gigabytes,
     time = 2 hour,
     workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
@@ -83,4 +83,4 @@ OSEEvolution(
   objective = Seq(
     avg_bbp under 0.45,
     avg_shannon under 1.55)
-) hook (workDirectory / "results_ose_15_10.omr", frequency = 10) on drago
+) hook (workDirectory / "results_ose_18_10.omr", frequency = 10) on drago
