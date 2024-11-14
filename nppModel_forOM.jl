@@ -4,11 +4,11 @@ using Distributions
 using Random
 
 # OpenMOLE-provided variables (assumed to be defined)
-mu = 0.2                 # Competition coefficient (0 to 1)
-NPP = 100.0               # Net Primary Productivity (10 to 10000)
-num_predators = 5      # Number of predator species
-num_herbivores = 10     # Number of herbivore species
-H0_mean = 10.0            # Mean characteristic density of herbivores
+# mu = 0.2                 # Competition coefficient (0 to 1)
+# NPP = 100.0               # Net Primary Productivity (10 to 10000)
+# num_predators = 5      # Number of predator species
+# num_herbivores = 10     # Number of herbivore species
+# H0_mean = 10.0            # Mean characteristic density of herbivores
 # Optionally, you can define 'seed' for reproducibility
 
 # Set random seed for reproducibility (optional)

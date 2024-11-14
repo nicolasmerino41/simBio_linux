@@ -19,7 +19,7 @@ val juliaTask = JuliaTask(
   outputs += value mapped "value"
 )
 
-val env = LocalEnvironment(4)
+val env = LocalEnvironment(10)
 
 PSEEvolution(
   evaluation = juliaTask,
@@ -28,15 +28,14 @@ PSEEvolution(
   genome = Seq(
     total_biomass in (0.0, 1.0),
     mu in (0.0, 1.0),
-    NPP in (10.0, 1000.0),
+    NPP in (10.0, 10000.0),
     num_predators in (1, 10),
     num_herbivores in (1, 20),
     H0_mean in (1.0, 100.0)    
     ),
   objective = Seq(
-    total_biomass in (-1.0 to 2.0 by 0.1),
-    value in (0.0 to 0.8 by 0.1)) 
-) hook (workDirectory / "results", frequency = 100) on env
+    total_biomass in (0.0 to 2.0 by 0.1)) 
+) hook (workDirectory / "results_pse_new", frequency = 100) on env
 
 //val exploration =
 //  DirectSampling(
