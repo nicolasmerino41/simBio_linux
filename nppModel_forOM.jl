@@ -3,12 +3,21 @@ using DifferentialEquations
 using Distributions
 using Random
 
+# Suppress warnings
+old_stderr = stderr
+redirect_stderr(devnull)
+# Code that triggers the warning
+using SciMLBase
+# Example operation that causes the warning...
+# Restore stderr
+redirect_stderr(old_stderr)
+
 # OpenMOLE-provided variables (assumed to be defined)
-# mu = 0.2                 # Competition coefficient (0 to 1)
-# NPP = 100.0               # Net Primary Productivity (10 to 10000)
-# num_predators = 5      # Number of predator species
-# num_herbivores = 10     # Number of herbivore species
-# H0_mean = 10.0            # Mean characteristic density of herbivores
+mu = 0.2                 # Competition coefficient (0 to 1)
+NPP = 100.0               # Net Primary Productivity (10 to 10000)
+num_predators = 5      # Number of predator species
+num_herbivores = 10     # Number of herbivore species
+H0_mean = 10.0            # Mean characteristic density of herbivores
 # Optionally, you can define 'seed' for reproducibility
 
 # Set random seed for reproducibility (optional)
@@ -181,7 +190,7 @@ function run_simulation()
     prob = ODEProblem(ecosystem_dynamics!, u_init, tspan, p)
 
     # Solve the ODE
-    sol = solve(prob, Tsit5(); reltol=1e-6, abstol=1e-6)
+    sol = solve(prob, DifferentialEquations.Tsit5(); reltol=1e-6, abstol=1e-6)
 
     # Extract herbivore data
     S_star = length(herbivore_list)
@@ -190,12 +199,35 @@ function run_simulation()
     # Calculate total biomass at the end
     total_biomass = sum(H_array[:, end])
 
+    herbivore_data = sol[1:length(herbivore_list), :]  # Herbivore dynamics
+    predator_data = sol[length(herbivore_list)+1:end, :]  # Predator dynamics
+    herbivore_biomass = sum(herbivore_data[:, end])
+    predator_biomass = sum(predator_data[:, end])
+
+    if any(herbivore_data[:, end] .<= 1.0) 
+        num_extinct_herbivores = count(herbivore_data[:, end] .<= 1.0)
+        # println(num_extinct_herbivores, " herbivore(s) went extinct.")
+    else
+        num_extinct_herbivores = 0
+    end
+    if any(predator_data[:, end] .<= 1.0)
+        num_extinct_predators = count(predator_data[:, end] .<= 1.0)
+        # println(num_extinct_predators, " predator(s) went extinct.")
+    else
+        num_extinct_predators = 0
+    end
+    are_there_extinctions = num_extinct_herbivores > 0 || num_extinct_predators > 0
+    are_there_extinctions = Int(are_there_extinctions)
     # Return the total biomass
-    return total_biomass/NPP
+    return total_biomass/NPP, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions
 end
 
 # Run the simulation and obtain the output
-total_biomass = run_simulation()
-value = 0.8*rand()
+total_biomass, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions = run_simulation()
 # Output the result (OpenMOLE will capture the variable 'total_biomass')
 println("total_biomass = ", total_biomass)
+println("num_extinct_herbivores = ", num_extinct_herbivores)
+println("num_extinct_predators = ", num_extinct_predators)
+println("herbivore_biomass = ", herbivore_biomass)
+println("predator_biomass = ", predator_biomass)
+println("are_there_extinctions = ", are_there_extinctions)
