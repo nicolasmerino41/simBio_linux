@@ -24,7 +24,7 @@ mutable struct Herbivore
 end
 
 # Constructor for Herbivore
-Herbivores(; m::Float64, H0::Float64, H_init::Float64, g::Float64=0.0) = Herbivores(m, H0, H_init, g)
+Herbivores(; m::Float64, H0::Float64, H_init::Float64, g::Float64=0.0) = Herbivores(; m, H0, H_init, g)
 
 # Function to create herbivores_list
 function create_herbivores_list(num_herbivores::Int; m_mean::Float64=0.1, m_sd::Float64=0.02,
@@ -145,7 +145,7 @@ end
 # Main simulation function
 function run_simulation()
     # Create herbivore list and calculate growth rates
-    herbivores_list = create_herbivores_list(num_herbivores; m_mean=m_mean_h, H0_mean=H0_mean_aprox)
+    herbivore_list = create_herbivores_list(num_herbivores; m_mean=m_mean_h, H0_mean=H0_mean_aprox)
     calculate_growth_rates(herbivore_list, NPP, mu)
 
     # Create beta_matrix
@@ -182,7 +182,6 @@ function run_simulation()
     sol = solve(prob, DifferentialEquations.Tsit5(); reltol=1e-6, abstol=1e-6)
 
     # Extract herbivore data
-    S_star = length(herbivore_list)
     H_array = sol[1:S_star, :]
 
     # Calculate total biomass at the end
