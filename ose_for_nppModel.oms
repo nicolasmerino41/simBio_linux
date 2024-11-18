@@ -5,11 +5,11 @@ val num_herbivores = Val[Int]
 val H0_mean = Val[Double]
 val connectivity = Val[Double]
 val total_biomass = Val[Double]
-val value = Val[Double]
+val are_there_extinctions = Val[Int]
 
 val juliaTask = JuliaTask(
   script = (workDirectory / "nppModel_forOM.jl"),
-  libraries = Seq("DifferentialEquations", "Distributions", "Random")
+  libraries = Seq("DifferentialEquations", "Distributions", "Random", "SciMLBase"),
 ) set (
   inputs += mu.mapped,
   inputs += NPP.mapped,
@@ -18,26 +18,24 @@ val juliaTask = JuliaTask(
   inputs += H0_mean.mapped,
   inputs += connectivity.mapped,
   outputs += total_biomass mapped "total_biomass",
-  outputs += value mapped "value"
+  outputs += are_there_extinctions mapped "are_there_extinctions"
 )
 
 val env = LocalEnvironment(10)
 
+// OSE method
 OSEEvolution(
   evaluation = juliaTask,
   parallelism = 10,
-  termination = 100,
-  genome = Seq(
-    total_biomass in (0.0, 1.0),
-    mu in (0.0, 1.0),
-    NPP in (10.0, 10000.0),
-    num_predators in (1, 10),
-    num_herbivores in (1, 20),
-    H0_mean in (1.0, 100.0),
-    connectivity in (0.0, 1.0)    
+  termination = 5000,
+  origin = Seq(
+    mu  in (0.0 to 1.0 by 0.1),
+    NPP in (10.0 to 11000.0 by 1000.0),
+    num_herbivores in (3 to 20 by 1),
+    num_predators in (0 to 10 by 1),
+    H0_mean in (1.0 to 100.0 by 20.0),
+    connectivity in (0.0 to 1.0 by 0.2) 
     ),
   objective = Seq(
-    total_biomass in (0.0 to 2.0 by 0.1)) 
-) hook (workDirectory / "results_pse_new", frequency = 100) on env
-
-
+    total_biomass under 0.5)
+) hook (workDirectory / "results_ose_long_new.omr", frequency = 100) on env

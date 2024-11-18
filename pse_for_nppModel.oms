@@ -28,7 +28,6 @@ PSEEvolution(
   parallelism = 10,
   termination = 5000,
   genome = Seq(
-    total_biomass in (0.0, 1.0),
     mu in (0.0, 1.0),
     NPP in (10.0, 10000.0),
     num_predators in (1, 10),
