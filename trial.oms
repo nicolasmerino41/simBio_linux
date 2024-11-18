@@ -1,4 +1,3 @@
-// THIS WORKS FINE, USE IT AS REFERENCE, AND NOW START MODIFYING oms_for_nppModel
 // Define the variables that are transmitted between the tasks
 val total_biomass = Val[Double]
 val result = Val[Double]
@@ -14,12 +13,22 @@ val juliaTask = JuliaTask(
 // Define the execution environment, here it is a local execution environment with 4 threads
 val env = LocalEnvironment(4)
 
-PSEEvolution(
+// SA method WORKS FINE
+SensitivityMorris(
   evaluation = juliaTask,
-  parallelism = 4,
-  termination = 10,
-  genome = Seq(
-    total_biomass in (0.0, 1.0)),
-  objective = Seq(
-    result in (-1.0 to 2.0 by 0.1))
-) hook (workDirectory / "results", frequency = 1) on env
+  sample = 10,
+  level = 4,  // Updated level
+  inputs  = Seq(
+    total_biomass in (0.0, 1.0)
+    ),
+  outputs = Seq(result)
+) hook (workDirectory / "trial_short.omr") on env
+
+//  evaluation = juliaTask,
+//  parallelism = 4,
+//  termination = 10,
+//  genome = Seq(
+//    total_biomass in (0.0, 1.0)),
+//  objective = Seq(
+//    result in (-1.0 to 2.0 by 0.1))
+// ) hook (workDirectory / "results", frequency = 1) on env
