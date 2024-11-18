@@ -3,29 +3,17 @@ using DifferentialEquations
 using Distributions
 using Random
 
-# Suppress warnings
-old_stderr = stderr
-redirect_stderr(devnull)
-# Code that triggers the warning
-using SciMLBase
-# Example operation that causes the warning...
-# Restore stderr
-redirect_stderr(old_stderr)
-
 # OpenMOLE-provided variables (assumed to be defined)
-mu = 0.2                 # Competition coefficient (0 to 1)
-NPP = 100.0               # Net Primary Productivity (10 to 10000)
-num_predators = 5      # Number of predator species
-num_herbivores = 10     # Number of herbivore species
-H0_mean = 10.0            # Mean characteristic density of herbivores
-# Optionally, you can define 'seed' for reproducibility
+# mu = 0.2                 # Competition coefficient (0 to 1)
+# NPP = 100.0               # Net Primary Productivity (10 to 10000)
+num_predators = 2      # Number of predator species
+num_herbivores = 5     # Number of herbivore species
+# H0_mean = 10.0            # Mean characteristic density of herbivores
+# # Optionally, you can define 'seed' for reproducibility
 
-# Set random seed for reproducibility (optional)
-# Random.seed!(seed)
-
-# Derived parameters
+# # Derived parameters
 H0_mean_aprox = H0_mean  # H0_mean provided by OpenMOLE
-connectivity = 1.0       # You can also make this an input if needed
+# connectivity = 1.0       # You can also make this an input if needed
 
 # Define the Herbivores struct
 mutable struct Herbivore
@@ -36,19 +24,20 @@ mutable struct Herbivore
 end
 
 # Constructor for Herbivore
-Herbivore(; m::Float64, H0::Float64, H_init::Float64, g::Float64=0.0) = Herbivore(m, H0, H_init, g)
+Herbivores(; m::Float64, H0::Float64, H_init::Float64, g::Float64=0.0) = Herbivores(m, H0, H_init, g)
 
-# Function to create herbivore_list
-function create_herbivore_list(num_herbivores::Int; m_mean::Float64=0.1, m_sd::Float64=0.02,
-                               H0_mean::Float64, H0_sd::Float64)
-    herbivore_list = []
+# Function to create herbivores_list
+function create_herbivores_list(num_herbivores::Int; m_mean::Float64=0.1, m_sd::Float64=0.02,
+    H0_mean::Float64=H0_mean_aprox, H0_sd::Float64=H0_mean_aprox/10,
+    H_init_mean::Float64=5.0, H_init_sd::Float64=1.0)
+    herbivores_list = []
     for i in 1:num_herbivores
-        m = max(0.01, rand(Normal(m_mean, m_sd)))          # Mortality rate
-        H0 = max(1.0, rand(Normal(H0_mean, H0_sd)))        # Characteristic density
-        H_init = H0  # Initial abundance set to characteristic density
-        push!(herbivore_list, Herbivore(m=m, H0=H0, H_init=H_init))
+    m = rand(Normal(m_mean, m_sd))          # Mortality rate
+    H0 = rand(Normal(H0_mean, H0_sd))        # Characteristic density
+    H_init = H0  # Initial abundance set to characteristic density
+    push!(herbivores_list, Herbivores(m=m, H0=H0, H_init=H_init))
     end
-    return herbivore_list
+    return herbivores_list
 end
 
 # Function to calculate growth rates based on NPP
@@ -77,19 +66,20 @@ end
 # Predator constructor
 Predator(; m::Float64, a::Float64, h::Float64, e::Float64, P_init::Float64) = Predator(m, a, h, e, P_init)
 
-# Function to create a list of predators
+# Function to create a list of predators with adjusted parameters
 function create_predator_list(num_predators::Int; m_mean::Float64=0.1, m_sd::Float64=0.02,
-                              a_mean::Float64=0.001, a_sd::Float64=0.0001,
-                              h_mean::Float64=0.1, h_sd::Float64=0.01,
-                              e_mean::Float64=0.1, e_sd::Float64=0.01)
+    a_mean::Float64=0.01, a_sd::Float64=0.0001,
+    h_mean::Float64=0.1, h_sd::Float64=0.01,
+    e_mean::Float64=0.1, e_sd::Float64=0.01,
+    P_init_mean::Float64=5.0, P_init_sd::Float64=1.0)
     predator_list = []
     for _ in 1:num_predators
-        m = max(0.01, rand(Normal(m_mean, m_sd)))              # Mortality rate
-        a = max(0.0001, rand(Normal(a_mean, a_sd)))            # Attack rate
-        h = max(0.01, rand(Normal(h_mean, h_sd)))              # Handling time
-        e = max(0.01, rand(Normal(e_mean, e_sd)))              # Conversion efficiency
-        P_init = max(0.1, rand(Normal(5.0, 1.0)))              # Initial abundance
-        push!(predator_list, Predator(m=m, a=a, h=h, e=e, P_init=P_init))
+    m = rand(Normal(m_mean, m_sd))            # Mortality rate
+    a = rand(Normal(a_mean, a_sd))            # Attack rate
+    h = rand(Normal(h_mean, h_sd))            # Handling time
+    e = rand(Normal(e_mean, e_sd))            # Conversion efficiency
+    P_init = rand(Normal(P_init_mean, P_init_mean/10))  # Initial abundance
+    push!(predator_list, Predator(m=m, a=a, h=h, e=e, P_init=P_init))
     end
     return predator_list
 end
@@ -155,11 +145,7 @@ end
 # Main simulation function
 function run_simulation()
     # Create herbivore list and calculate growth rates
-    herbivore_list = create_herbivore_list(
-        num_herbivores,
-        H0_mean=H0_mean_aprox,
-        H0_sd=H0_mean_aprox / 10
-    )
+    herbivores_list = create_herbivores_list(num_herbivores; m_mean=m_mean_h, H0_mean=H0_mean_aprox)
     calculate_growth_rates(herbivore_list, NPP, mu)
 
     # Create beta_matrix
@@ -170,7 +156,10 @@ function run_simulation()
     end
 
     # Create predator list
-    predator_list = create_predator_list(num_predators)
+    predator_list = create_predator_list(
+        num_predators; 
+        m_mean=m_mean_p
+    )
 
     # Generate the interaction matrix
     IM = generate_interaction_matrix(num_predators, S_star, connectivity)
@@ -204,13 +193,13 @@ function run_simulation()
     herbivore_biomass = sum(herbivore_data[:, end])
     predator_biomass = sum(predator_data[:, end])
 
-    if any(herbivore_data[:, end] .<= 1.0) 
+    if true #any(herbivore_data[:, end] .<= 1.0) 
         num_extinct_herbivores = count(herbivore_data[:, end] .<= 1.0)
         # println(num_extinct_herbivores, " herbivore(s) went extinct.")
     else
         num_extinct_herbivores = 0
     end
-    if any(predator_data[:, end] .<= 1.0)
+    if true #any(predator_data[:, end] .<= 1.0)
         num_extinct_predators = count(predator_data[:, end] .<= 1.0)
         # println(num_extinct_predators, " predator(s) went extinct.")
     else
@@ -218,16 +207,19 @@ function run_simulation()
     end
     are_there_extinctions = num_extinct_herbivores > 0 || num_extinct_predators > 0
     are_there_extinctions = Int(are_there_extinctions)
+
+    prop_of_sp_extinct = (num_extinct_herbivores + num_extinct_predators) / (num_herbivores + num_predators)
     # Return the total biomass
-    return total_biomass/NPP, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions
+    return total_biomass/NPP, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions, prop_of_sp_extinct
 end
 
 # Run the simulation and obtain the output
-total_biomass, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions = run_simulation()
+total_biomass, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions, prop_of_sp_extinct = run_simulation()
 # Output the result (OpenMOLE will capture the variable 'total_biomass')
 println("total_biomass = ", total_biomass)
-println("num_extinct_herbivores = ", num_extinct_herbivores)
-println("num_extinct_predators = ", num_extinct_predators)
 println("herbivore_biomass = ", herbivore_biomass)
 println("predator_biomass = ", predator_biomass)
+println("pred/herb ratio = ", predator_biomass/herbivore_biomass)
+println("num_extinct_herbivores = $num_extinct_herbivores/$num_herbivores")
+println("num_extinct_predators = $num_extinct_predators/$num_predators")
 println("are_there_extinctions = ", are_there_extinctions)
