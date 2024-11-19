@@ -6,11 +6,11 @@ using Random
 # OpenMOLE-provided variables (assumed to be defined)
 # mu = 0.2                 # Competition coefficient (0 to 1)
 # NPP = 100.0               # Net Primary Productivity (10 to 10000)
-num_predators = Int(num_pred)      # Number of predator species
-num_herbivores = Int(num_herb)     # Number of herbivore species
+num_predators = Int(round(num_pred, digits = 0))      # Number of predator species
+num_herbivores = Int(round(num_herb, digits = 0))     # Number of herbivore species
 # H0_mean = 10.0            # Mean characteristic density of herbivores
 # # Optionally, you can define 'seed' for reproducibility
-
+# c_mean_p = 0.1
 # # Derived parameters
 H0_mean_aprox = H0_mean  # H0_mean provided by OpenMOLE
 # connectivity = 1.0       # You can also make this an input if needed
@@ -61,27 +61,30 @@ mutable struct Predator
     h::Float64        # Handling time
     e::Float64        # Conversion efficiency
     P_init::Float64   # Initial abundance
+    c::Float64        # Self-regulation coefficient
 end
 
 # Predator constructor
-Predator(; m::Float64, a::Float64, h::Float64, e::Float64, P_init::Float64) = Predator(m, a, h, e, P_init)
+Predator(; m::Float64, a::Float64, h::Float64, e::Float64, P_init::Float64, c::Float64) = Predator(m, a, h, e, P_init, c)
 
 # Function to create a list of predators with adjusted parameters
 function create_predator_list(num_predators::Int; m_mean::Float64=0.1, m_sd::Float64=0.02,
     a_mean::Float64=0.01, a_sd::Float64=0.0001,
     h_mean::Float64=0.1, h_sd::Float64=0.01,
     e_mean::Float64=0.1, e_sd::Float64=0.01,
-    P_init_mean::Float64=5.0, P_init_sd::Float64=1.0)
-    predator_list = []
-    for _ in 1:num_predators
-    m = rand(Normal(m_mean, m_sd))            # Mortality rate
-    a = rand(Normal(a_mean, a_sd))            # Attack rate
-    h = rand(Normal(h_mean, h_sd))            # Handling time
-    e = rand(Normal(e_mean, e_sd))            # Conversion efficiency
-    P_init = rand(Normal(P_init_mean, P_init_mean/10))  # Initial abundance
-    push!(predator_list, Predator(m=m, a=a, h=h, e=e, P_init=P_init))
-    end
-    return predator_list
+    P_init_mean::Float64=5.0, P_init_sd::Float64=1.0,
+    c_mean::Float64=0.1, c_sd::Float64=0.01)
+predator_list = []
+for _ in 1:num_predators
+m = rand(Normal(m_mean, m_sd))              # Mortality rate
+a = rand(Normal(a_mean, a_sd))            # Attack rate
+h = rand(Normal(h_mean, h_sd))              # Handling time
+e = rand(Normal(e_mean, e_sd))              # Conversion efficiency
+P_init = rand(Normal(P_init_mean, P_init_mean/10))  # Initial abundance
+c = rand(Normal(c_mean, c_sd))  # Define mean and sd for c
+push!(predator_list, Predator(m=m, a=a, h=h, e=e, P_init=P_init, c=c))
+end
+return predator_list
 end
 
 # Function to generate the interaction matrix
@@ -123,18 +126,18 @@ function ecosystem_dynamics!(du, u, p, t)
         du_H[i] = H[i] * sp.m * ((sp.g / sp.m) - 1 - competition) - predation
     end
 
-    # Predator dynamics
-    for k in 1:num_predators
+     # Predator dynamics with self-regulation
+     for k in 1:num_predators
         pred = predator_list[k]
         ingestion = 0.0
         for i in 1:S_star
-            if IM[k, i]
-                f_ki = (pred.a * H[i]) / (1 + pred.a * pred.h * H[i])  # Functional response
-                ingestion += f_ki
-            end
+           if IM[k, i]
+              f_ki = (pred.a * H[i]) / (1 + pred.a * pred.h * H[i])  # Functional response
+              ingestion += f_ki
+          end
         end
-        # Compute derivative for predators
-        du_P[k] = P[k] * (pred.e * ingestion - pred.m)
+        # Self-regulation term
+        du_P[k] = P[k] * (pred.e * ingestion - pred.m - pred.c * P[k])
     end
 
     # Assign derivatives
@@ -158,7 +161,9 @@ function run_simulation()
     # Create predator list
     predator_list = create_predator_list(
         num_predators; 
-        m_mean=m_mean_p
+        m_mean=m_mean_p, a_mean=a_mean_p, 
+        h_mean=h_mean_p, e_mean=e_mean_p,
+        c_mean=c_mean_p
     )
 
     # Generate the interaction matrix
