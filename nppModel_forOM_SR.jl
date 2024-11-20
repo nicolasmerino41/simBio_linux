@@ -14,7 +14,9 @@ num_herbivores = Int(round(num_herb, digits = 0))     # Number of herbivore spec
 # # Derived parameters
 H0_mean_aprox = H0_mean  # H0_mean provided by OpenMOLE
 # connectivity = 1.0       # You can also make this an input if needed
-
+a_mean_p = 0.01
+e_mean_p = 0.1
+h_mean_p = 0.1
 # Define the Herbivore struct
 mutable struct Herbivore
     m::Float64        # Mortality rate
@@ -24,16 +26,16 @@ mutable struct Herbivore
 end
 
 # Constructor for Herbivore
-Herbivore(; m::Float64, H0::Float64, H_init::Float64, g::Float64=0.0) = Herbivore(; m, H0, H_init, g)
+Herbivore(; m::Float64, H0::Float64, H_init::Float64, g::Float64=0.0) = Herbivore(m, H0, H_init, g)
 
 # Function to create herbivores_list
 function create_herbivores_list(num_herbivores::Int; m_mean::Float64=0.1, m_sd::Float64=0.02,
     H0_mean::Float64=H0_mean_aprox, H0_sd::Float64=H0_mean_aprox/10,
     H_init_mean::Float64=5.0, H_init_sd::Float64=1.0)
-    herbivores_list = []
+    herbivores_list = Herbivore[]
     for i in 1:num_herbivores
-    m = rand(Normal(m_mean, m_sd))          # Mortality rate
-    H0 = rand(Normal(H0_mean, H0_sd))        # Characteristic density
+    m = abs(rand(Normal(m_mean, m_sd)))          # Mortality rate
+    H0 = abs(rand(Normal(H0_mean, H0_sd)))        # Characteristic density
     H_init = H0  # Initial abundance set to characteristic density
     push!(herbivores_list, Herbivore(m=m, H0=H0, H_init=H_init))
     end
@@ -74,14 +76,14 @@ function create_predator_list(num_predators::Int; m_mean::Float64=0.1, m_sd::Flo
     e_mean::Float64=0.1, e_sd::Float64=0.01,
     P_init_mean::Float64=5.0, P_init_sd::Float64=1.0,
     c_mean::Float64=0.1, c_sd::Float64=0.01)
-predator_list = []
+predator_list = Predator[]
 for _ in 1:num_predators
-m = rand(Normal(m_mean, m_sd))              # Mortality rate
-a = rand(Normal(a_mean, a_sd))            # Attack rate
-h = rand(Normal(h_mean, h_sd))              # Handling time
-e = rand(Normal(e_mean, e_sd))              # Conversion efficiency
-P_init = rand(Normal(P_init_mean, P_init_mean/10))  # Initial abundance
-c = rand(Normal(c_mean, c_sd))  # Define mean and sd for c
+m = abs(rand(Normal(m_mean, m_sd)))             # Mortality rate
+a = abs(rand(Normal(a_mean, a_sd)))           # Attack rate
+h = abs(rand(Normal(h_mean, h_sd)))             # Handling time
+e = abs(rand(Normal(e_mean, e_sd)))              # Conversion efficiency
+P_init = abs(rand(Normal(P_init_mean, P_init_mean/10)))  # Initial abundance
+c = abs(rand(Normal(c_mean, c_sd)))  # Define mean and sd for c
 push!(predator_list, Predator(m=m, a=a, h=h, e=e, P_init=P_init, c=c))
 end
 return predator_list
@@ -146,7 +148,8 @@ function ecosystem_dynamics!(du, u, p, t)
 end
 
 # Main simulation function
-function run_simulation()
+function run_simulation(num_predators::Int, num_herbivores::Int, H0_mean_aprox::Float64, connectivity::Float64, m_mean_h::Float64, m_mean_p::Float64, c_mean_p::Float64)
+    
     # Create herbivore list and calculate growth rates
     herbivore_list = create_herbivores_list(num_herbivores; m_mean=m_mean_h, H0_mean=H0_mean_aprox)
     calculate_growth_rates(herbivore_list, NPP, mu)
@@ -218,7 +221,7 @@ function run_simulation()
 end
 
 # Run the simulation and obtain the output
-total_biomass, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions, prop_of_sp_extinct = run_simulation()
+total_biomass, num_extinct_herbivores, num_extinct_predators, herbivore_biomass, predator_biomass, are_there_extinctions, prop_of_sp_extinct = run_simulation(num_predators, num_herbivores, H0_mean_aprox, connectivity, m_mean_h, m_mean_p, c_mean_p)
 # Output the result (OpenMOLE will capture the variable 'total_biomass')
 println("total_biomass = ", total_biomass)
 println("herbivore_biomass = ", herbivore_biomass)

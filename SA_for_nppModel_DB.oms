@@ -21,8 +21,8 @@ val nppModel = JuliaTask(
   inputs += H0_mean.mapped,
   inputs += connectivity.mapped,
   inputs += m_mean_h.mapped,
-  inputs += m_mean_p,
-  inputs += c_mean_p,
+  inputs += m_mean_p.mapped,
+  inputs += c_mean_p.mapped,
   outputs += total_biomass mapped "total_biomass",
   outputs += prop_of_sp_extinct mapped "prop_of_sp_extinct"
 )
