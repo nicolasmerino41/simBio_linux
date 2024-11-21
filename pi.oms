@@ -42,7 +42,7 @@ val exploration =
     seed = seed,
     sample = 100,
     aggregation = Seq(pi evaluate average)
-  ) hook display on env
+  ) hook display on drago
 
 exploration 
 

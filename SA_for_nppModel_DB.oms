@@ -29,10 +29,20 @@ val nppModel = JuliaTask(
 
 val env = LocalEnvironment(1)
 
+val drago =
+  SLURMEnvironment(
+    "nmerino",
+    "drago.csic.es",
+    partition = "express",
+    memory = 22 gigabytes,
+    time = 1 hour,
+    workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
+  )
+
 // SA method
 SensitivitySaltelli(
   evaluation = nppModel,
-  sample = 20000,
+  sample = 200,
   inputs  = Seq(
     mu  in (0.0 to 1.0),
     NPP in (10.0 to 10000.0),
@@ -45,4 +55,4 @@ SensitivitySaltelli(
     c_mean_p in (0.0 to 1.0)
     ),
   outputs = Seq(total_biomass, prop_of_sp_extinct)
-) hook (workDirectory / "saltelli_nppModel_20000samples.omr") on env
+) hook (workDirectory / "saltelli_nppModel_200samples.omr") on drago
