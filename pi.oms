@@ -32,7 +32,7 @@ val drago =
     //cpuPerTask = 1,
     //memory = 4 gigabytes,
     time = 1 hour,
-    modules = Seq("rama0.3", "apptainer/1.3.2"),
+    //modules = Seq("rama0.3", "apptainer/1.3.2"),
     workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
   )
 
