@@ -268,6 +268,7 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
     # Equation holding true?
     growth_rates = [sp.g for sp in herbivores_list]
     holding = (NPP/sum(growth_rates .* herbivore_data[:, end]) > 0.99) && (NPP/sum(growth_rates .* herbivore_data[:, end]) < 1.001)
+    sum_g_i_H_i = sum(growth_rates .* herbivore_data[:, end])
 
     # Create results row
     results_row = DataFrame(
@@ -293,6 +294,8 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
         prop_of_sp_extinct=prop_of_sp_extinct,
         total_biomass_vs_npp=total_biomass_vs_npp,
         holding=holding,
+        sum_g_i_H_i=sum_g_i_H_i,
+        sum_g_i_H_i_over_NPP = sum_g_i_H_i/NPP,
         fi_over_4=fi_over_4,
         NPP_vS_fi4=sum_pi_NPP_larger_than_fi_over_4
     )

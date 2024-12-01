@@ -11,7 +11,7 @@
 #SBATCH -N 1                        # Numero de nodods solicitados
 #SBATCH -n 48     	            # Numero de cores(CPUs)
 #SBATCH --mem=188G                 	# memoria total solicitada
-#SBATCH -t 0-9:55:00         	    # Duracion solicitada para el trabajo (D-HH:MM:SS)
+#SBATCH -t 3-9:55:00         	    # Duracion solicitada para el trabajo (D-HH:MM:SS)
 #SBATCH --job-name=Threaded            # Nombre del trabajo
 
 #SBATCH -o Trabajo-%j.out             # fichero de salida estandart
