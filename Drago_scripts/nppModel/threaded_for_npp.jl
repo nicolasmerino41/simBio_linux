@@ -179,6 +179,7 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
     H0_mean_aprox = H0_mean
     p_i_sd = 0.0
     m_sd_h = 0.01
+    ext_thr = NPP/(num_herbivores+num_predators)*0.001
 
     # Your simulation logic remains the same
     herbivores_list = create_herbivores_list(num_herbivores; m_mean=m_mean_h, m_sd=m_sd_h,
@@ -203,26 +204,63 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
         c_mean=c_mean_p, c_sd=0.01
     )
 
+    # Generate the interaction matrix
     IM = generate_interaction_matrix(num_predators, S_star, connectivity)
-    H_init_values = [sp.H_init for sp in herbivores_list]
-    P_init_values = [pred.P_init for pred in predator_list]
+
+    # Initial conditions for herbivores and predators
+    H_init_values = Float64[sp.H_init for sp in herbivores_list]
+    P_init_values = Float64[pred.P_init for pred in predator_list]
+
+    # Combined initial conditions for the system
     u_init = vcat(H_init_values, P_init_values)
+
+    # Define the time span for simulation
     tspan = (0.0, 1000.0)
 
+    # Define the ODE problem
     p = (herbivores_list, beta_matrix, predator_list, IM)
     prob = ODEProblem(ecosystem_dynamics!, u_init, tspan, p)
-    sol = solve(prob, Tsit5(); reltol=1e-6, abstol=1e-6)
+    
+    # Define extinction callbacks and positive domain
+    callbacks = []
+    push!(callbacks, PositiveDomain())
+    # For herbivores
+    for i in 1:length(herbivores_list)
+        condition(u, t, integrator) = u[i] - ext_thr
+        affect!(integrator) = integrator.u[i] = 0.0
+        push!(callbacks, ContinuousCallback(condition, affect!))
+    end
 
-    herbivore_biomass = sum(sol[1:S_star, end])
-    predator_biomass = sum(sol[S_star+1:end, end])
+    # For predators
+    offset = length(herbivores_list)
+    for i in 1:length(predator_list)
+        idx = offset + i  # Adjust index for predators
+        condition(u, t, integrator) = u[idx] - ext_thr
+        affect!(integrator) = integrator.u[idx] = 0.0
+        push!(callbacks, ContinuousCallback(condition, affect!))
+    end
+
+    # Combine all callbacks
+    cb = CallbackSet(callbacks...)
+
+    # Solve the ODE with callbacks
+    sol = solve(prob, Tsit5(); callback=cb, reltol=1e-6, abstol=1e-6)
+
+    # Extract time series data
+    times = sol.t
     herbivore_data = sol[1:length(herbivores_list), :]  # Herbivore dynamics
     predator_data = sol[length(herbivores_list)+1:end, :]  # Predator dynamics
+
+    # Calculate biomasses, excluding extinct species
+    herbivore_biomass = sum(herbivore_data[:, end][herbivore_data[:, end] .> ext_thr])
+    predator_biomass = sum(predator_data[:, end][predator_data[:, end] .> ext_thr])
     total_biomass = herbivore_biomass + predator_biomass
     total_biomass_vs_npp = total_biomass / NPP
     num_extinct_herbivores = count(sol[1:S_star, end] .<= 1.0)
     num_extinct_predators = count(sol[S_star+1:end, end] .<= 1.0)
     are_there_extinctions = num_extinct_herbivores > 0 || num_extinct_predators > 0
     prop_of_sp_extinct = (num_extinct_herbivores + num_extinct_predators) / (num_herbivores + num_predators)
+    pred_herb_ratio = predator_biomass / herbivore_biomass
 
     fi_over_4 = sum([sp.H0 for sp in herbivores_list].*[sp.m for sp in herbivores_list]./4)
     sum_pi_NPP_larger_than_fi_over_4 = NPP > fi_over_4
@@ -233,6 +271,7 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
 
     # Create results row
     results_row = DataFrame(
+        # INPUTS
         num_herbivores=num_herbivores,
         num_predators=num_predators,
         mu=mu,
@@ -244,10 +283,12 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
         c_mean_p=c_mean_p,
         total_biomass=total_biomass,
         p_i = 1/num_herbivores,
+        # OUTPUTS
         num_extinct_herbivores=num_extinct_herbivores,
         num_extinct_predators=num_extinct_predators,
         herbivore_biomass=herbivore_biomass,
         predator_biomass=predator_biomass,
+        pred_herb_ratio=pred_herb_ratio,
         are_there_extinctions=are_there_extinctions,
         prop_of_sp_extinct=prop_of_sp_extinct,
         total_biomass_vs_npp=total_biomass_vs_npp,
@@ -257,7 +298,7 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
     )
 
     # Write results using the thread-safe function
-    csv_filename = "resultados_threaded/simulation_results_30_11.csv"
+    csv_filename = "resultados_threaded/simulation_results_1_12.csv"
     write_results_safely(results_row, csv_filename)
 
     # println("go")

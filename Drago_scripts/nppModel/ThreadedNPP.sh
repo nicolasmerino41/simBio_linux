@@ -34,9 +34,9 @@ module load Julia/1.10.5-linux-x86_64
 ###################################################################################################################
 directorio=/lustre/home/mncn/nmerino/nppModel            # Directorio donde se encuentran los Scripts de bash y Julia
 cd $directorio                                	      # Nos ubicamos en el directorio de trabajo 
-rm -r resultados_threaded
-mkdir resultados_threaded                                      # carpeta para almacenar resultados
-cd $directorio
+# rm -r resultados_threaded
+# mkdir resultados_threaded                                      # carpeta para almacenar resultados
+# cd $directorio
 
 ###################################################################################################################
 ########################################## COMANDO A EJECUTAR #####################################################
