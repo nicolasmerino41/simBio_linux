@@ -185,7 +185,7 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
     herbivores_list = create_herbivores_list(num_herbivores; m_mean=m_mean_h, m_sd=m_sd_h,
         H0_mean=NPP/num_herbivores, H0_sd=NPP/num_herbivores/0.1,
         H_init=NPP/num_herbivores, 
-        p_i_mean=NPP/num_herbivores, p_i_sd=0.0
+        p_i_mean=1/num_herbivores, p_i_sd=0.0
     )
     calculate_growth_rates(herbivores_list, NPP, mu)
 
@@ -337,5 +337,3 @@ Threads.@threads for params in parameter_combinations
     num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean_p, connectivity, c_mean_p = params
     run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean_p, connectivity, c_mean_p)
 end
-
-
