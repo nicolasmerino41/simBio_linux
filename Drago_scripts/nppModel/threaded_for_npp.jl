@@ -301,7 +301,7 @@ function run_simulation(num_herbivores, num_predators, mu, NPP, m_mean_h, m_mean
     )
 
     # Write results using the thread-safe function
-    csv_filename = "resultados_threaded/simulation_results_1_12.csv"
+    csv_filename = "resultados_threaded/simulation_results_2_12.csv"
     write_results_safely(results_row, csv_filename)
 
     # println("go")
