@@ -1,0 +1,50 @@
+val prevalence = Val[Double] 
+val richness_eval = Val[Double]
+val richness = DisplayHook("richness_eval is ${richness_eval}.")
+
+val juliaTask = JuliaTask(
+  script = (workDirectory / "model.jl"),
+  libraries = Seq("CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase", "ArchGDAL"),
+  install = Seq(
+    """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))'""",
+    """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/Dispersal.jl", rev="dev"))'"""
+  ),
+  hostFiles = Seq(
+    HostFile((workDirectory / "DFs/gbif_sizes.csv").toString, "/workdir/gbif_sizes.csv"),
+    HostFile((workDirectory / "DFs/TetraEU_pairwise_interactions.csv").toString, "/workdir/TetraEU_pairwise_interactions.csv"),
+    HostFile((workDirectory / "DFs/TetraEU_generic_diet.csv").toString, "/workdir/TetraEU_generic_diet.csv"),
+    HostFile((workDirectory / "DFs/DB_Amphibians_IP.txt").toString, "/workdir/DB_Amphibians_IP.txt"),
+    HostFile((workDirectory / "DFs/DB_Birds_IP.txt").toString, "/workdir/DB_Birds_IP.txt"),
+    HostFile((workDirectory / "DFs/DB_Mammals_IP.txt").toString, "/workdir/DB_Mammals_IP.txt"),
+    HostFile((workDirectory / "DFs/DB_Reptiles_IP.txt").toString, "/workdir/DB_Reptiles_IP.txt"),
+    HostFile((workDirectory / "Objects/DA_with_abundances_all100.jls").toString, "/workdir/DA_with_abundances_all100.jls"),
+    HostFile((workDirectory / "Objects/DA_sum.jls").toString, "/workdir/DA_sum.jls"),
+    HostFile((workDirectory / "Objects/DA_richness.jls").toString, "/workdir/DA_richness.jls"),
+    HostFile((workDirectory / "DFs/npp_absolute_df.csv").toString, "/workdir/npp_absolute_df.csv"),
+    HostFile((workDirectory / "Objects/iberian_interact_df.jls").toString, "/workdir/iberian_interact_df.jls"),
+    HostFile((workDirectory / "Objects/bio5.jls").toString, "/workdir/bio5.jls"),
+    HostFile((workDirectory / "Objects/bio6.jls").toString, "/workdir/bio6.jls"),
+    HostFile((workDirectory / "Objects/bio12.jls").toString, "/workdir/bio12.jls"),
+    HostFile((workDirectory / "DFs/iberian_species_niches_withbinned_TH.csv").toString, "/workdir/iberian_species_niches_withbinned_TH.csv"),
+    HostFile((workDirectory / "DFs/iberian_species_niches_withLaxNiche.csv").toString, "/workdir/iberian_species_niches_withLaxNiche.csv"),
+    HostFile((workDirectory / "DFs/iberian_species_niches_withVeryStrictNiche.csv").toString, "/workdir/iberian_species_niches_withVeryStrictNiche.csv"),
+    HostFile((workDirectory / "DFs/herbivore_names.csv").toString, "/workdir/herbivore_names.csv"),
+    HostFile((workDirectory / "DFs/Species_spain_df.csv").toString, "/workdir/Species_spain_df.csv"),
+    HostFile((workDirectory / "Objects/npp_DA.jls").toString, "/workdir/npp_DA.jls"),
+    HostFile((workDirectory / "HerpsVsBirmmals.jl").toString, "/workdir/HerpsVsBirmmals.jl"),
+    HostFile((workDirectory / "Objects/updated_utmraster.tif").toString, "/workdir/updated_utmraster.tif")
+  ),
+  version = "1.10.4"
+) set(
+  inputs += (prevalence.mapped),
+  outputs += (richness_eval mapped "richness_eval")
+)
+
+val env = LocalEnvironment(7)
+
+DirectSampling(
+  evaluation = juliaTask ,
+  sampling = (prevalence in (0.1 to 0.3 by 0.1))
+) 
+
+// hook (workDirectory / "results/juliaTask_${richness_eval}.csv")

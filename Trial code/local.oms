@@ -1,0 +1,83 @@
+val epsilon = Val[Double]
+val sigma = Val[Double]
+val alfa = Val[Double]
+val sigma_comp = Val[Double]
+val assymetry = Val[Double]
+val avg_shannon = Val[Double]
+val avg_bbp = Val[Double]
+
+// Seed declaration for random number generation
+val myseed = Val[Int]
+
+val juliaTask = JuliaTask(
+  script = (workDirectory / "run_for_OM.jl"),
+  libraries = Seq("ArchGDAL", "CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase"),
+  install = Seq(
+    """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))'""",
+    """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/Dispersal.jl", rev="dev"))'"""
+  ),
+  hostFiles = Seq(
+    HostFile((workDirectory / "DFs/gbif_sizes.csv").toString, "/workdir/gbif_sizes.csv"),
+    HostFile((workDirectory / "DFs/TetraEU_pairwise_interactions.csv").toString, "/workdir/TetraEU_pairwise_interactions.csv"),
+    HostFile((workDirectory / "DFs/TetraEU_generic_diet.csv").toString, "/workdir/TetraEU_generic_diet.csv"),
+    HostFile((workDirectory / "DFs/DB_Amphibians_IP.txt").toString, "/workdir/DB_Amphibians_IP.txt"),
+    HostFile((workDirectory / "DFs/DB_Birds_IP.txt").toString, "/workdir/DB_Birds_IP.txt"),
+    HostFile((workDirectory / "DFs/DB_Mammals_IP.txt").toString, "/workdir/DB_Mammals_IP.txt"),
+    HostFile((workDirectory / "DFs/DB_Reptiles_IP.txt").toString, "/workdir/DB_Reptiles_IP.txt"),
+    HostFile((workDirectory / "Objects/DA_with_abundances_all100.jls").toString, "/workdir/DA_with_abundances_all100.jls"),
+    HostFile((workDirectory / "Objects/DA_sum.jls").toString, "/workdir/DA_sum.jls"),
+    HostFile((workDirectory / "Objects/DA_richness.jls").toString, "/workdir/DA_richness.jls"),
+    HostFile((workDirectory / "DFs/npp_absolute_df.csv").toString, "/workdir/npp_absolute_df.csv"),
+    HostFile((workDirectory / "Objects/iberian_interact_df.jls").toString, "/workdir/iberian_interact_df.jls"),
+    HostFile((workDirectory / "Objects/bio5.jls").toString, "/workdir/bio5.jls"),
+    HostFile((workDirectory / "Objects/bio6.jls").toString, "/workdir/bio6.jls"),
+    HostFile((workDirectory / "Objects/bio12.jls").toString, "/workdir/bio12.jls"),
+    HostFile((workDirectory / "DFs/iberian_species_niches_withbinned_TH.csv").toString, "/workdir/iberian_species_niches_withbinned_TH.csv"),
+    HostFile((workDirectory / "DFs/iberian_species_niches_withLaxNiche.csv").toString, "/workdir/iberian_species_niches_withLaxNiche.csv"),
+    HostFile((workDirectory / "DFs/iberian_species_niches_withVeryStrictNiche.csv").toString, "/workdir/iberian_species_niches_withVeryStrictNiche.csv"),
+    HostFile((workDirectory / "DFs/Species_spain_df.csv").toString, "/workdir/Species_spain_df.csv"),
+    HostFile((workDirectory / "Objects/npp_DA.jls").toString, "/workdir/npp_DA.jls"),
+    HostFile((workDirectory / "Rasters/updated_utmraster.tif").toString, "/workdir/updated_utmraster.tif"),
+    HostFile((workDirectory / "Objects/DA.jls").toString, "/workdir/DA.jls"),
+    HostFile((workDirectory / "Objects/DA_birmmals.jls").toString, "/workdir/DA_birmmals.jls"),
+    HostFile((workDirectory / "Objects/DA_herps.jls").toString, "/workdir/DA_herps.jls"),
+    HostFile((workDirectory / "Rasters/wildareas-v3-2009-human-footprint.tif").toString, "/workdir/wildareas-v3-2009-human-footprint.tif"),
+    HostFile((workDirectory / "DFs/TLs.csv").toString, "/workdir/TLs.csv"),
+    HostFile((workDirectory / "HerpsVsBirmmals.jl").toString, "/workdir/HerpsVsBirmmals.jl"),
+    HostFile((workDirectory / "efficient_setup_for_OM.jl").toString, "/workdir/efficient_setup_for_OM.jl"),
+    HostFile((workDirectory / "human_footprint_for_OM.jl").toString, "/workdir/human_footprint_for_OM.jl"),
+    HostFile((workDirectory / "kernels_for_OM.jl").toString, "/workdir/kernels_for_OM.jl"),
+    HostFile((workDirectory / "Implicit_competition_for_herbivores_for_OM.jl").toString, "/workdir/Implicit_competition_for_herbivores_for_OM.jl"),
+    HostFile((workDirectory / "New_metrics_for_OM.jl").toString, "/workdir/New_metrics_for_OM.jl")
+  ),
+  version = "1.10.4"
+) set(
+  inputs += epsilon.mapped,
+  inputs += sigma.mapped,
+  inputs += alfa.mapped,
+  inputs += sigma_comp.mapped,
+  inputs += assymetry.mapped,
+  outputs += avg_bbp mapped "avg_bbp",
+  outputs += avg_shannon mapped "avg_shannon"
+)
+
+val env = LocalEnvironment(2)
+
+// PSEEvolution to replace DirectSampling
+PSEEvolution(
+  evaluation = juliaTask,
+  parallelism = 2,
+  termination = 20, // Set according to your needs
+  genome = Seq(
+    epsilon in (0.33, 3.0),
+    sigma in (0.0001, 1.0),
+    alfa in (0.001, 1.0),
+    sigma_comp in (0.00001, 1.0),
+    assymetry in (0.0, 1.0)
+  ),
+  objective = Seq(
+    avg_bbp in (1.0 to 3.0 by 1.0),
+    avg_shannon in (0.0 to 6.0 by 2.0),
+    ),
+  stochastic = Stochastic(seed = myseed)
+) hook (workDirectory / "results_OM", frequency = 10) on env

@@ -1,0 +1,66 @@
+val epsilon = Val[Double]
+
+// Seed declaration for random number generation
+val myseed = Val[Int]
+
+val juliaTask = JuliaTask(
+  script = (workDirectory / "empty.jl"),
+  libraries = Seq("CSV", "DataFrames", "Distributions", "NamedArrays", "StaticArrays", "Serialization", "Rasters", "DimensionalData", "OrderedCollections", "StatsBase", "ArchGDAL"),
+  install = Seq(
+    """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/DynamicGrids.jl", rev="dev"))'""",
+    """julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cesaraustralia/Dispersal.jl", rev="dev"))'"""
+  ),
+  version = "1.10.4"
+) set(
+  inputs += epsilon.mapped,
+  outputs += epsilon mapped "epsilon",  
+  resources += (workDirectory / "DFs/gbif_sizes.csv"),
+  resources += (workDirectory / "DFs/TetraEU_pairwise_interactions.csv"),
+  resources += (workDirectory / "DFs/TetraEU_generic_diet.csv"),
+  resources += (workDirectory / "DFs/DB_Amphibians_IP.txt"),
+  resources += (workDirectory / "DFs/DB_Birds_IP.txt"),
+  resources += (workDirectory / "DFs/DB_Mammals_IP.txt"),
+  resources += (workDirectory / "DFs/DB_Reptiles_IP.txt"),
+  resources += (workDirectory / "Objects/DA_with_abundances_all100.jls"),
+  resources += (workDirectory / "Objects/DA_sum.jls"),
+  resources += (workDirectory / "Objects/DA_richness.jls"),
+  resources += (workDirectory / "DFs/npp_absolute_df.csv"),
+  resources += (workDirectory / "Objects/iberian_interact_df.jls"),
+  resources += (workDirectory / "Objects/bio5.jls"),
+  resources += (workDirectory / "Objects/bio6.jls"),
+  resources += (workDirectory / "Objects/bio12.jls"),
+  resources += (workDirectory / "DFs/iberian_species_niches_withbinned_TH.csv"),
+  resources += (workDirectory / "DFs/iberian_species_niches_withLaxNiche.csv"),
+  resources += (workDirectory / "DFs/iberian_species_niches_withVeryStrictNiche.csv"),
+  resources += (workDirectory / "DFs/Species_spain_df.csv"),
+  resources += (workDirectory / "Objects/npp_DA.jls"),
+  resources += (workDirectory / "Rasters/updated_utmraster.tif"),
+  resources += (workDirectory / "Objects/DA.jls"),
+  resources += (workDirectory / "Objects/DA_birmmals.jls"),
+  resources += (workDirectory / "Objects/DA_herps.jls"),
+  resources += (workDirectory / "Rasters/wildareas-v3-2009-human-footprint.tif"),
+  resources += (workDirectory / "DFs/TLs.csv"),
+  resources += (workDirectory / "HerpsVsBirmmals.jl"),
+  resources += (workDirectory / "efficient_setup_for_OM.jl"),
+  resources += (workDirectory / "human_footprint_for_OM.jl"),
+  resources += (workDirectory / "kernels_for_OM.jl"),
+  resources += (workDirectory / "Implicit_competition_for_herbivores_for_OM.jl"),
+  resources += (workDirectory / "New_metrics_for_OM.jl")
+)
+
+val env = LocalEnvironment(1)
+val drago =
+  SLURMEnvironment(
+    "nmerino",
+    "drago.csic.es",
+    partition = "express",
+    memory = 40 gigabytes,
+    time = 1 hour,
+    workDirectory = "lustre/home/mncn/nmerino/Contenedor/simBio"
+  )
+
+// PSEEvolution to replace DirectSampling
+DirectSampling(
+  evaluation = juliaTask,
+  sampling = (epsilon in (10.0 to 11.0 by 1.0))
+) hook display on drago

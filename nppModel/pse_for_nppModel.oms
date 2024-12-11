@@ -1,0 +1,56 @@
+val mu = Val[Double]
+val NPP = Val[Double]
+val num_predators = Val[Int]
+val num_herbivores = Val[Int]
+val H0_mean = Val[Double]
+val connectivity = Val[Double]
+val total_biomass = Val[Double]
+val are_there_extinctions = Val[Int]
+
+val juliaTask = JuliaTask(
+  script = (workDirectory / "nppModel_forOM.jl"),
+  libraries = Seq("DifferentialEquations", "Distributions", "Random", "SciMLBase"),
+) set (
+  inputs += mu.mapped,
+  inputs += NPP.mapped,
+  inputs += num_predators.mapped,
+  inputs += num_herbivores.mapped,
+  inputs += H0_mean.mapped,
+  inputs += connectivity.mapped,
+  outputs += total_biomass mapped "total_biomass",
+  outputs += are_there_extinctions mapped "are_there_extinctions"
+)
+
+val env = LocalEnvironment(10)
+
+PSEEvolution(
+  evaluation = juliaTask,
+  parallelism = 10,
+  termination = 5000,
+  genome = Seq(
+    mu in (0.0, 1.0),
+    NPP in (10.0, 10000.0),
+    num_predators in (1, 10),
+    num_herbivores in (1, 20),
+    H0_mean in (1.0, 100.0),
+    connectivity in (0.0, 1.0)
+  ),
+  objective = Seq(
+    total_biomass in (0.0 to 2.0 by 0.1),
+    are_there_extinctions in (0 to 1 by 1)
+  )
+) hook (workDirectory / "results_pse_new_long", frequency = 100) on env
+
+
+//val exploration =
+//  DirectSampling(
+//    evaluation = juliaTask,
+//    sampling =
+//      (mu in (0.0 to 1.0 by 0.1)) x
+//      (NPP in (10.0 to 10000.0 by 100.0)) x
+//      (num_predators in (1 to 10 by 1)) x
+//      (num_herbivores in (1 to 20 by 1)) x
+//      (H0_mean in (1.0 to 100.0 by 10.0))
+//  ) hook(workDirectory / "results_npp.omr") on env
+
+//exploration
