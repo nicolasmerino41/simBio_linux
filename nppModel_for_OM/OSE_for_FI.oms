@@ -1,0 +1,54 @@
+val mu = Val[Double]
+//val NPP = Val[Double]
+val M_mean = Val[Double]
+val R = Val[Int]
+val S = Val[Int]
+val H0_mean = Val[Double]
+val connectivity_hp = Val[Double]
+val epsilon = Val[Double]
+
+val total_biomass = Val[Double]
+val are_there_extinctions = Val[Int]
+val herb_pred_bodymass_ratio = Val[Double]
+val proportion_of_survived = Val[Double]
+
+val model = JuliaTask(
+  script = (workDirectory / "FinalImplementation_for_OM.jl"),
+  libraries = Seq("Statistics, ""DifferentialEquations", "Distributions", "Random", "LinearAlgebra", "DiffEqCallbacks"),
+  //version = "1.10.4"
+) set (
+  inputs += mu.mapped,
+  //inputs += NPP.mapped,
+  inputs += R.mapped,
+  inputs += S.mapped,
+  inputs += H0_mean.mapped,
+  inputs += M_mean.mapped,
+  inputs += connectivity_hp.mapped,
+  inputs += epsilon.mapped,
+  outputs += herb_pred_bodymass_ratio mapped "herb_pred_bodymass_ratio",
+  outputs += proportion_of_survived mapped "proportion_of_survived"
+)
+
+val env = LocalEnvironment(10)
+
+// OSE method
+val ose = OSEEvolution(
+  evaluation = model,
+  parallelism = 10,
+  termination = 100,
+  origin = Seq(
+    mu  in (0.0 to 1.0 by 0.1),
+    M_mean in (0.0 to 1.0 by 1.0),
+    S in (3 to 20 by 1),
+    R in (0 to 10 by 1),
+    H0_mean in (1.0 to 100.0 by 20.0),
+    connectivity_hp in (0.0 to 1.0 by 0.2),
+    epsilon in (0.0 to 1.0 by 0.1)
+    ),
+  objective = Seq(
+    proportion_of_survived -under 0.9,
+    herb_pred_bodymass_ratio -under 0.002
+    )
+) hook (workDirectory / "results_ose_long_new.omr", frequency = 100)
+
+ose on env
